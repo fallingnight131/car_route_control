@@ -1,5 +1,6 @@
 import pygame
 import math
+import csv
 
 # 初始化 Pygame
 pygame.init()
@@ -13,6 +14,7 @@ pygame.display.set_caption("Pygame Racing Game - Complex Track")
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
+GREEN = (0, 255, 0)
 
 # 车辆参数
 car_pos = [200, 750]  # 车辆初始位置
@@ -27,70 +29,123 @@ track_outer = [
     (150, 750), (150, 600), (200, 550), (330, 500), (350, 400),
     (250, 400), (200, 350), (150, 300), (150, 250), (150, 100),
     (300, 50), (500, 100), (650, 200), (750, 350), (850, 400),
-    (900, 450), (900, 550), (850, 620), (700, 670), (600, 720),
-    (400, 780), (150, 780)
+    (900, 450), (900, 550), (850, 620), (620, 700), (550, 650),
+    (420, 680), (400, 780), (150, 780)
 ]
 track_inner = [
-    (250, 700), (250, 600), (300, 550), (380, 530), (400, 500),
+    (150, 700), (250, 600), (300, 550), (380, 530), (400, 500),
     (400, 400), (350, 350), (250, 350), (200, 300), (200, 150),
     (350, 100), (500, 150), (600, 250), (700, 400), (800, 450),
-    (850, 500), (850, 550), (800, 600), (650, 650), (550, 700),
-    (350, 750), (250, 700)
+    (850, 500), (850, 550), (800, 600), (650, 650), (550, 600),
+    (400, 620), (350, 750), (250, 750)
 ]
 
-# 判断点是否在多边形内（射线法）
-def is_point_inside_polygon(point, polygon):
-    x, y = point
-    n = len(polygon)
-    inside = False
-    p1x, p1y = polygon[0]
-    
-    for i in range(n + 1):
-        p2x, p2y = polygon[i % n]
-        if y > min(p1y, p2y):
-            if y <= max(p1y, p2y):
-                if x <= max(p1x, p2x):
-                    if p1y != p2y:
-                        xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
-                    if p1x == p2x or x <= xinters:
-                        inside = not inside
-        p1x, p1y = p2x, p2y
-    return inside
+# 终点线
+goal_line = [(150, 600), (250, 600)]
 
-# 游戏主循环
+# 数据记录
+player_data = []
+
+def distance(point1, point2):
+    """计算欧几里得距离"""
+    return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
+
+def find_nearest_obstacle(car_pos, car_angle, track):
+    """计算车辆前方、左侧、右侧最近的赛道边界点"""
+    directions = [0, 90, -90]  # 前方、左侧、右侧
+    min_distances = [float('inf'), float('inf'), float('inf')]
+
+    for i, direction in enumerate(directions):
+        angle = math.radians(car_angle + direction)
+        start = car_pos
+        end = (car_pos[0] + math.cos(angle) * WIDTH, car_pos[1] - math.sin(angle) * HEIGHT)
+
+        for j in range(len(track)):
+            p1, p2 = track[j], track[(j + 1) % len(track)]
+            intersect = line_intersection(start, end, p1, p2)
+            if intersect:
+                min_distances[i] = min(min_distances[i], distance(car_pos, intersect))
+
+    return min_distances
+
+def line_intersection(A, B, C, D):
+    """计算两条线段 AB 和 CD 是否相交，返回交点"""
+    def ccw(P, Q, R):
+        return (R[1] - P[1]) * (Q[0] - P[0]) > (Q[1] - P[1]) * (R[0] - P[0])
+
+    if ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D):
+        # 计算交点
+        dx1, dy1 = B[0] - A[0], B[1] - A[1]
+        dx2, dy2 = D[0] - C[0], D[1] - C[1]
+        denom = dx1 * dy2 - dy1 * dx2
+
+        if denom == 0:
+            return None
+
+        t = ((A[0] - C[0]) * dy2 - (A[1] - C[1]) * dx2) / denom
+        return (A[0] + t * dx1, A[1] + t * dy1)
+
+    return None
+
 running = True
 while running:
     screen.fill(WHITE)
     
-    # 事件监听
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
     
-    # 获取键盘输入
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:
-        car_angle += ROTATION_SPEED
-    if keys[pygame.K_RIGHT]:
+    left = keys[pygame.K_LEFT]
+    right = keys[pygame.K_RIGHT]
+    accelerate = keys[pygame.K_SPACE]
+ 
+    # 计算前方、左侧、右侧最近的障碍物距离
+    outer_distances = find_nearest_obstacle(car_pos, car_angle, track_outer)
+    inner_distances = find_nearest_obstacle(car_pos, car_angle, track_inner)
+
+    # 取更小的那一组距离
+    front_dist = min(outer_distances[0], inner_distances[0])
+    left_dist = min(outer_distances[1], inner_distances[1])
+    right_dist = min(outer_distances[2], inner_distances[2])
+
+    # 碰撞检测
+    if front_dist < 5 or left_dist < 5 or right_dist < 5:
+        print("Game Over: Collision Detected")
+        running = False
+    
+    # 检测是否到达终点
+    if goal_line[0][0] <= car_pos[0] <= goal_line[1][0] and goal_line[0][1] <= car_pos[1] <= goal_line[0][1] + 6:
+        print("Success: Reached Goal")
+        with open("player_data.csv", "w", newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Speed", "Front Distance", "Left Distance", "Right Distance", "Action"])
+            writer.writerows(player_data)
+        running = False
+    
+    # 记录数据
+    action = "left" if left else "right" if right else "straight"
+    accel = "accelerate" if accelerate else "decelerate"
+    player_data.append([car_speed, front_dist, left_dist, right_dist, action, accel])
+    
+    # 更新车辆信息
+    if left:
+       car_angle += ROTATION_SPEED
+    if right:
         car_angle -= ROTATION_SPEED
-    if keys[pygame.K_SPACE]:
+    if accelerate:
         car_speed = min(car_speed + ACCELERATION, MAX_SPEED)
     else:
         car_speed = max(car_speed - ACCELERATION, 0)
-    
-    # 计算新位置
+        
     rad = math.radians(car_angle)
     car_pos[0] += math.cos(rad) * car_speed
     car_pos[1] -= math.sin(rad) * car_speed
     
-    # **碰撞检测**
-    if not is_point_inside_polygon(car_pos, track_outer) or is_point_inside_polygon(car_pos, track_inner):
-        print("Game Over: Collision Detected")
-        running = False
-              
-    # 绘制赛道
+    # 绘制赛道和终点
     pygame.draw.polygon(screen, BLACK, track_outer, 3)
     pygame.draw.polygon(screen, BLACK, track_inner, 3)
+    pygame.draw.line(screen, GREEN, goal_line[0], goal_line[1], 5)
     
     # 绘制车辆（三角形箭头）
     car_points = [
@@ -102,5 +157,5 @@ while running:
     
     pygame.display.flip()
     pygame.time.delay(30)
-
+    
 pygame.quit()
