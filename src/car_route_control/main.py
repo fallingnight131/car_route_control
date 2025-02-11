@@ -1,10 +1,19 @@
 import pygame
 import math
 import csv
+import uuid
+import os
+import sys
+
+# 添加根目录到 sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 初始化 Pygame
 pygame.init()
 
+# 生成唯一 ID
+unique_id = uuid.uuid4().hex  
+    
 # 屏幕设置
 WIDTH, HEIGHT = 1000, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -42,6 +51,11 @@ track_inner = [
 
 # 终点线
 goal_line = [(150, 600), (250, 600)]
+
+# 创建 data 文件夹
+data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'data')
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
 
 # 数据记录
 player_data = []
@@ -117,7 +131,7 @@ while running:
     # 检测是否到达终点
     if goal_line[0][0] <= car_pos[0] <= goal_line[1][0] and goal_line[0][1] <= car_pos[1] <= goal_line[0][1] + 6:
         print("Success: Reached Goal")
-        with open("player_data.csv", "w", newline='') as file:
+        with open(f"data/player_data_{unique_id}.csv", "w", newline='') as file:
             writer = csv.writer(file)
             writer.writerow(["Speed", "Front Distance", "Left Distance", "Right Distance", "Action"])
             writer.writerows(player_data)
