@@ -1,8 +1,10 @@
 import numpy as np
 import skfuzzy as fuzz
 import skfuzzy.control as ctrl
-from sklearn.neural_network import MLPClassifier
 import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
 # 1. 定义模糊控制系统
 speed = ctrl.Antecedent(np.arange(0, 10, 0.1), 'speed')
@@ -41,17 +43,42 @@ rotation_ctrl = ctrl.ControlSystem([rule3, rule4, rule5])
 acceleration_sim = ctrl.ControlSystemSimulation(acceleration_ctrl)
 rotation_sim = ctrl.ControlSystemSimulation(rotation_ctrl)
 
-# 2. 训练 BP 神经网络
+# 2. 训练 BP 神经网络（使用 PyTorch）
+class NeuralNetwork(nn.Module):
+    def __init__(self):
+        super(NeuralNetwork, self).__init__()
+        self.fc1 = nn.Linear(4, 10)
+        self.fc2 = nn.Linear(10, 10)
+        self.fc3 = nn.Linear(10, 2)
+        self.relu = nn.ReLU()
+    
+    def forward(self, x):
+        x = self.relu(self.fc1(x))
+        x = self.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
 class IntelligentDriver:
     def __init__(self):
-        self.model = MLPClassifier(hidden_layer_sizes=(10, 10), max_iter=500)
+        self.model = NeuralNetwork()
+        self.criterion = nn.MSELoss()
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.01)
     
-    def train(self, data_file):
+    def train(self, data_file, epochs=500):
         df = pd.read_csv(data_file)
-        X = df.iloc[:, :4].values
-        y_accel = (df.iloc[:, 4] == 'accelerate').astype(int)  # 1 for accelerate, 0 for decelerate
-        y_rotate = df.iloc[:, 5].map({'left': -1, 'straight': 0, 'right': 1}).values
-        self.model.fit(X, np.column_stack((y_accel, y_rotate)))
+        X = torch.tensor(df.iloc[:, :4].values, dtype=torch.float32)
+        y_accel = torch.tensor((df.iloc[:, 4] == 'accelerate').astype(int).values, dtype=torch.float32)
+        y_rotate = torch.tensor(df.iloc[:, 5].map({'left': -1, 'straight': 0, 'right': 1}).values, dtype=torch.float32)
+        y = torch.column_stack((y_accel, y_rotate))
+        
+        for epoch in range(epochs):
+            self.optimizer.zero_grad()
+            output = self.model(X)
+            loss = self.criterion(output, y)
+            loss.backward()
+            self.optimizer.step()
+            if epoch % 100 == 0:
+                print(f'Epoch {epoch}, Loss: {loss.item()}')
     
     def predict(self, speed, front_dist, left_dist, right_dist):
         acceleration_sim.input['speed'] = speed
@@ -65,7 +92,8 @@ class IntelligentDriver:
         fuzzy_rotate = rotation_sim.output['rotation']
         
         # 使用 BP 神经网络进一步优化
-        bp_output = self.model.predict([[speed, front_dist, left_dist, right_dist]])[0]
+        input_tensor = torch.tensor([[speed, front_dist, left_dist, right_dist]], dtype=torch.float32)
+        bp_output = self.model(input_tensor).detach().numpy()[0]
         final_accel = bp_output[0] if bp_output[0] else fuzzy_accel
         final_rotate = bp_output[1] if bp_output[1] else fuzzy_rotate
         
