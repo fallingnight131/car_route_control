@@ -133,7 +133,7 @@ while running:
         print("Success: Reached Goal")
         with open(f"data/player_data_{unique_id}.csv", "w", newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(["Speed", "Front Distance", "Left Distance", "Right Distance", "Action"])
+            writer.writerow(["Speed", "Front Distance", "Left Distance", "Right Distance", "Action", "Acceleration"])
             writer.writerows(player_data)
         running = False
     
@@ -161,7 +161,7 @@ while running:
     pygame.draw.polygon(screen, BLACK, track_inner, 3)
     pygame.draw.line(screen, GREEN, goal_line[0], goal_line[1], 5)
     
-    # 绘制车辆（三角形箭头）
+    # 绘制车辆（三角形箭头） 
     car_points = [
         (car_pos[0] + math.cos(rad) * 10, car_pos[1] - math.sin(rad) * 10),
         (car_pos[0] + math.cos(rad + 2.5) * 10, car_pos[1] - math.sin(rad + 2.5) * 10),
