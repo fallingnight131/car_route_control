@@ -4,4 +4,4 @@ cache/
 test/
 data/
 model/
-!src/model/
+!src/car_route_control/model/
