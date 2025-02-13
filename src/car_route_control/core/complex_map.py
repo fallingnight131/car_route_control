@@ -121,7 +121,7 @@ while running:
     right_dist = min(outer_distances[2], inner_distances[2])
 
     # 碰撞检测
-    if front_dist < 0 or left_dist < 0 or right_dist < 0:
+    if front_dist == 0 or left_dist == 0 or right_dist == 0:
         print("Game Over: Collision Detected")
         running = False
     
