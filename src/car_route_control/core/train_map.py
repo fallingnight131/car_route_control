@@ -1,9 +1,10 @@
 import pygame
 import math
+import csv
 import uuid
 import os
 import sys
-from fuzzy import FuzzyDriver
+
 # 添加根目录到 sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -26,10 +27,11 @@ GREEN = (0, 255, 0)
 
 # 车辆参数
 car_pos = [200, 750]  # 车辆初始位置
+last_pos = car_pos.copy()  # 上一帧车辆位置
 car_angle = 0  # 车辆方向（角度）
 car_speed = 0  # 车辆速度
 ACCELERATION = 0.2  # 加速度
-MAX_SPEED = 2  # 最大速度
+MAX_SPEED = 6  # 最大速度
 ROTATION_SPEED = 4  # 旋转速率（度）
 
 # **复杂赛道边界**
@@ -47,6 +49,12 @@ track_inner = [
     (850, 500), (850, 550), (800, 600), (650, 650), (550, 600),
     (400, 620), (350, 750), (250, 750)
 ]
+
+# 8个检查线
+check_line = [[(350, 750), (350, 780)], [(550, 600), (550, 650)], [(850, 550), (900, 550)],
+              [(750, 350), (750, 425)], [(500, 100), (500, 150)], [(150, 150), (200, 150)], 
+              [(250, 350), (250, 400)],[(150, 600), (250, 600)]]
+
 
 # 数据记录
 player_data = []
@@ -92,10 +100,23 @@ def line_intersection(A, B, C, D):
 
     return None
 
-driver = FuzzyDriver()
 
-# 初始化字体
-pygame.font.init()
+def has_crossed_line(A, B, last_pos, car_pos):
+    """ 判断小车是否穿过了一条检查线 """
+    return line_intersection(last_pos, car_pos, A, B) is not None
+
+def update_fitness(car, last_pos, car_pos):
+    """ 更新某辆车的适应度 """
+    valid_checkpoints = car["valid_checkpoints"]
+    A, B = check_line[valid_checkpoints]
+    if has_crossed_line(A, B, last_pos, car_pos):
+        car["valid_checkpoints"] = (valid_checkpoints + 1) % len(check_line)
+        car["fitness"] += 1
+            
+cars = [
+    {"id": 1, "fitness": 0, "valid_checkpoints": 0}  # 只有第1个检查线最初有效
+]
+            
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
 running = True
@@ -121,58 +142,49 @@ while running:
     right_dist = min(outer_distances[2], inner_distances[2])
 
     # 碰撞检测
-    if front_dist <=0.3 or left_dist <=0.3 or right_dist <=0.3:
+    if front_dist < 5 or left_dist < 5 or right_dist < 5:
         print("Game Over: Collision Detected")
         running = False
     
-    # 模糊控制
-    acceleration, rotation = driver.predict(car_speed, front_dist, left_dist, right_dist)
+    # 检测是否到检查线
+    update_fitness(cars[0], last_pos, car_pos)
+    
+    # 记录上一时刻的位置
+    last_pos = car_pos.copy()
     
     # 更新车辆信息
-    # if left:
-    #    car_angle += ROTATION_SPEED
-    # if right:
-    #     car_angle -= ROTATION_SPEED
-    # if accelerate:
-    #     car_speed = min(car_speed + ACCELERATION, MAX_SPEED)
-    # else:
-    #     car_speed = max(car_speed - ACCELERATION, 0)
-    
-    if acceleration > 0:
-        car_speed = min(car_speed + acceleration, MAX_SPEED)
+    if left:
+       car_angle += ROTATION_SPEED
+    if right:
+        car_angle -= ROTATION_SPEED
+    if accelerate:
+        car_speed = min(car_speed + ACCELERATION, MAX_SPEED)
     else:
-        car_speed = max(car_speed + acceleration, 0)
-        
-    car_angle += rotation
+        car_speed = max(car_speed - ACCELERATION, 0)
         
     rad = math.radians(car_angle)
     car_pos[0] += math.cos(rad) * car_speed
     car_pos[1] -= math.sin(rad) * car_speed
     
-    # 绘制赛道和终点
+    # 绘制赛道
     pygame.draw.polygon(screen, BLACK, track_outer, 3)
     pygame.draw.polygon(screen, BLACK, track_inner, 3)
-
+    
+    # 绘制检查线
+    for line in check_line:
+        pygame.draw.line(screen, GREEN, line[0], line[1], 2)
+    
     # 绘制车辆（三角形箭头） 
     car_points = [
         (car_pos[0] + math.cos(rad) * 10, car_pos[1] - math.sin(rad) * 10),
         (car_pos[0] + math.cos(rad + 2.5) * 10, car_pos[1] - math.sin(rad + 2.5) * 10),
         (car_pos[0] + math.cos(rad - 2.5) * 10, car_pos[1] - math.sin(rad - 2.5) * 10)
     ]
-    pygame.draw.polygon(screen, RED, car_points)
+    # 在右上角显示小车的适应度。
+    text = font.render(f"Fitness: {cars[0]['fitness']}", True, BLACK)
+    screen.blit(text, (WIDTH - 200, 20))
     
-        # 显示车速和距离信息
-    text_surface = font.render(f"Speed: {car_speed:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 20))
-
-    text_surface = font.render(f"Front Dist: {front_dist:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 50))
-
-    text_surface = font.render(f"Left Dist: {left_dist:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 80))
-
-    text_surface = font.render(f"Right Dist: {right_dist:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 110))
+    pygame.draw.polygon(screen, RED, car_points)
     
     pygame.display.flip()
     pygame.time.delay(30)
