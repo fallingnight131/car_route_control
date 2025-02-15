@@ -27,6 +27,7 @@ GREEN = (0, 255, 0)
 
 # 车辆参数
 car_pos = [200, 750]  # 车辆初始位置
+last_pos = car_pos.copy()
 car_angle = 0  # 车辆方向（角度）
 car_speed = 0  # 车辆速度
 ACCELERATION = 0.2  # 加速度
@@ -48,6 +49,8 @@ track_inner = [
     (850, 500), (850, 550), (800, 600), (650, 650), (550, 600),
     (400, 620), (350, 750), (250, 750)
 ]
+
+track = [track_outer, track_inner]
 
 # 数据记录
 player_data = []
@@ -140,7 +143,45 @@ def repair_membership_functions(individual, structure, fixed_indices):
 
     return repaired
 
+def line_intersection(A, B, C, D):
+    """计算两条线段 AB 和 CD 是否相交，返回交点"""
+    def ccw(P, Q, R):
+        return (R[1] - P[1]) * (Q[0] - P[0]) > (Q[1] - P[1]) * (R[0] - P[0])
 
+    if ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D):
+        # 计算交点
+        dx1, dy1 = B[0] - A[0], B[1] - A[1]
+        dx2, dy2 = D[0] - C[0], D[1] - C[1]
+        denom = dx1 * dy2 - dy1 * dx2
+
+        if denom == 0:
+            return None
+
+        t = ((A[0] - C[0]) * dy2 - (A[1] - C[1]) * dx2) / denom
+        return (A[0] + t * dx1, A[1] + t * dy1)
+
+    return None
+
+
+def has_crossed_line(A, B, last_pos, car_pos):
+    """ 判断小车是否穿过了一条线 """
+    return line_intersection(last_pos, car_pos, A, B) is not None
+
+
+def has_crossed_polygon(last_pos, car_pos, polygon):
+    """
+    判断车辆从 last_pos 移动到 car_pos 时是否穿过了多边形边界。
+    
+    :param last_pos: (x1, y1) 上一时刻的坐标
+    :param car_pos: (x2, y2) 现在的坐标
+    :param polygon: List[(x, y)] 赛道外边界顶点列表
+    :return: bool 是否穿过多边形
+    """
+    for i in range(len(polygon)):
+        A, B = polygon[i], polygon[(i + 1) % len(polygon)]
+        if has_crossed_line(A, B, last_pos, car_pos):
+            return True
+    return False
 
 def random_individual():
     individual = []
@@ -170,7 +211,11 @@ structure = [5, 5, 5]
 fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
 # 修复模糊隶属函数参数
 individual = repair_membership_functions(individual, structure, fixed_indices)
-
+individual = [
+        0, 0, 0.1, 0.05, 0.3, 0.5, 0.4, 0.6, 0.9, 0.8, 1.2, 1.5, 1.4, 2, 2,  # speed
+        0, 0, 3, 2, 8, 12, 10, 50, 90, 80, 120, 250, 200, 350, 500,          # front_dist
+        0, 0, 3, 2, 8, 12, 10, 20, 30, 25, 120, 200, 180, 250, 300,          # left_dist
+    ]
 driver = FuzzyDriver(individual)
 
 # 初始化字体
@@ -200,9 +245,12 @@ while running:
     right_dist = min(outer_distances[2], inner_distances[2])
 
     # 碰撞检测
-    if front_dist <= 0.3 or left_dist <= 0.3 or right_dist <= 0.3:
+    if has_crossed_polygon(last_pos, car_pos, track_outer) or has_crossed_polygon(last_pos, car_pos, track_inner):
         print("Game Over: Collision Detected")
         running = False
+    
+    # 记录上一时刻的位置
+    last_pos = car_pos.copy()
     
     # 模糊控制
     acceleration, rotation = driver.predict(car_speed, front_dist, left_dist, right_dist)

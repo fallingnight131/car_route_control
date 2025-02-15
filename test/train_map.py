@@ -4,9 +4,13 @@ import csv
 import uuid
 import os
 import sys
+import random
 
 # 添加根目录到 sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from fuzzy import FuzzyDriver
+from car import Car
 
 # 初始化 Pygame
 pygame.init()
@@ -26,13 +30,20 @@ BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 
 # 车辆参数
-car_pos = [200, 750]  # 车辆初始位置
-last_pos = car_pos.copy()  # 上一帧车辆位置
-car_angle = 0  # 车辆方向（角度）
-car_speed = 0  # 车辆速度
-ACCELERATION = 0.2  # 加速度
-MAX_SPEED = 6  # 最大速度
-ROTATION_SPEED = 4  # 旋转速率（度）
+# car_pos = [200, 750]  # 车辆初始位置
+# last_pos = car_pos.copy()  # 上一帧车辆位置
+# car_angle = 0  # 车辆方向（角度）
+# car_speed = 0  # 车辆速度
+# ACCELERATION = 0.2  # 加速度
+# MAX_SPEED = 6  # 最大速度
+# ROTATION_SPEED = 4  # 旋转速率（度）
+
+cars = []
+for _ in range(10):
+    individual = [random.uniform(-1, 1) for _ in range(30)]  # 随机初始化模糊控制参数
+    car = Car(individual=individual, x=0, y=0, angle=0)
+    cars.append(car)
+
 
 # **复杂赛道边界**
 track_outer = [
