@@ -1,6 +1,7 @@
 import pygame
 import math
 import uuid
+import random
 import os
 import sys
 from fuzzy import FuzzyDriver
@@ -92,7 +93,85 @@ def line_intersection(A, B, C, D):
 
     return None
 
-driver = FuzzyDriver()
+
+def repair_membership_functions(individual, structure, fixed_indices):
+    """
+    修复模糊隶属函数参数，确保：
+    1. 交界处先交换 (如交换 0.1 和 0.05)。
+    2. 整个模糊变量的 15 个参数递增排序。
+    3. 交界处再交换回去，确保模糊集完全覆盖。
+    4. 指定的索引处参数不会被修改。
+
+    参数：
+    - individual: List[float]，个体表示的模糊参数
+    - structure: List[int]，每个变量的模糊集数量（如 [5, 5, 5, 5, 5, 5]）
+    - fixed_indices: Set[int]，不允许修改的索引集合
+
+    返回：
+    - 修复后的 individual（List[float]）
+    """
+    repaired = individual[:]  # 复制原个体，避免修改原数据
+    index = 0  # 当前变量的起始索引
+
+    for num_sets in structure:
+        # 获取该变量所有 15 个参数
+        params = repaired[index:index + num_sets * 3]
+
+        # 第一步：先交换交界处
+        for i in range(1, num_sets):
+            params[i * 3 - 1], params[i * 3] = params[i * 3], params[i * 3 - 1]
+
+        # 第二步：整体递增排序（跳过 fixed_indices）
+        sortable_params = [
+            (i, val) for i, val in enumerate(params) if index + i not in fixed_indices
+        ]
+        sorted_values = sorted(val for _, val in sortable_params)
+        
+        for (i, _), val in zip(sortable_params, sorted_values):
+            params[i] = val  # 只修改非固定索引的值
+
+        # 第三步：再交换回交界处
+        for i in range(1, num_sets):
+            params[i * 3 - 1], params[i * 3] = params[i * 3], params[i * 3 - 1]
+
+        # 更新 repaired 个体
+        repaired[index:index + num_sets * 3] = params
+        index += num_sets * 3  # 移动到下一个变量
+
+    return repaired
+
+
+
+def random_individual():
+    individual = []
+    
+    # 定义每个模糊变量的取值范围
+    ranges = [(0, 2), (0, 500), (0, 300)]    
+    
+    # 每个变量有 5 个模糊集，每个模糊集 3 个参数 (左、中、右)
+    for low, high in ranges:
+        for _ in range(15):
+            individual.append(round(random.uniform(low, high),2))
+    
+    # 设定固定的索引（转换为 0-based）
+    fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
+    
+    # 将固定的索引设置为最大最小值
+    for i in range(len(fixed_indices)):
+        if i % 4 == 0 or i % 4 == 1:
+            individual[fixed_indices[i]] = ranges[i // 4][0]
+        if i % 4 == 2 or i % 4 == 3:
+            individual[fixed_indices[i]] = ranges[i // 4][1]
+        
+    return individual
+
+individual = random_individual()
+structure = [5, 5, 5]
+fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
+# 修复模糊隶属函数参数
+individual = repair_membership_functions(individual, structure, fixed_indices)
+
+driver = FuzzyDriver(individual)
 
 # 初始化字体
 pygame.font.init()
@@ -121,14 +200,12 @@ while running:
     right_dist = min(outer_distances[2], inner_distances[2])
 
     # 碰撞检测
-    if front_dist <=0.3 or left_dist <=0.3 or right_dist <=0.3:
+    if front_dist <= 0.3 or left_dist <= 0.3 or right_dist <= 0.3:
         print("Game Over: Collision Detected")
         running = False
     
     # 模糊控制
     acceleration, rotation = driver.predict(car_speed, front_dist, left_dist, right_dist)
-    
-    # 更新车辆信息
     
     if acceleration > 0:
         car_speed = min(car_speed + acceleration, MAX_SPEED)

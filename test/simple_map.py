@@ -25,7 +25,7 @@ BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 
 # 车辆参数
-car_pos = [200, 750]  # 车辆初始位置
+car_pos = [400, 475]  # 车辆初始位置
 car_angle = 0  # 车辆方向（角度）
 car_speed = 0  # 车辆速度
 ACCELERATION = 0.2  # 加速度
@@ -33,20 +33,9 @@ MAX_SPEED = 2  # 最大速度
 ROTATION_SPEED = 4  # 旋转速率（度）
 
 # **复杂赛道边界**
-track_outer = [
-    (150, 750), (150, 600), (200, 550), (330, 500), (350, 400),
-    (250, 400), (200, 350), (150, 300), (150, 250), (150, 100),
-    (300, 50), (500, 100), (650, 200), (750, 350), (850, 400),
-    (900, 450), (900, 550), (850, 620), (620, 700), (550, 650),
-    (520, 680), (450, 780), (180, 780)
-]
-track_inner = [
-    (200, 700), (250, 600), (300, 550), (380, 530), (400, 500),
-    (400, 400), (350, 350), (250, 350), (200, 300), (200, 150),
-    (350, 100), (500, 150), (600, 250), (700, 400), (800, 450),
-    (850, 500), (850, 550), (800, 600), (650, 650), (550, 600),
-    (400, 620), (350, 750), (250, 750)
-]
+track_outer = [(100, 100), (700, 100), (750, 200), (700, 300), (600, 400), (500, 450), (400, 500), (300, 450), (200, 400), (100, 300), (50, 200), (100, 100)]
+track_inner = [(200, 200), (600, 200), (650, 250), (600, 350), (500, 400), (400, 450), (300, 400), (200, 350), (150, 250), (200, 200)]
+
 
 # 数据记录
 player_data = []
@@ -92,7 +81,13 @@ def line_intersection(A, B, C, D):
 
     return None
 
-driver = FuzzyDriver()
+individual = [
+    0, 0, 0.1, 0.05, 0.3, 0.5, 0.4, 0.6, 0.9, 0.8, 1.2, 1.5, 1.4, 2, 2,  # speed
+    0, 0, 3, 2, 8, 12, 10, 50, 90, 80, 120, 250, 200, 350, 500,          # front_dist
+    0, 0, 3, 2, 8, 12, 10, 20, 30, 25, 120, 200, 180, 250, 300,          # left_dist
+]
+    
+driver = FuzzyDriver(individual)
 
 # 初始化字体
 pygame.font.init()
@@ -121,14 +116,12 @@ while running:
     right_dist = min(outer_distances[2], inner_distances[2])
 
     # 碰撞检测
-    if front_dist <=0.3 or left_dist <=0.3 or right_dist <=0.3:
+    if front_dist < 0 or left_dist < 0 or right_dist < 0:
         print("Game Over: Collision Detected")
         running = False
     
     # 模糊控制
     acceleration, rotation = driver.predict(car_speed, front_dist, left_dist, right_dist)
-    
-    # 更新车辆信息
     
     if acceleration > 0:
         car_speed = min(car_speed + acceleration, MAX_SPEED)
@@ -141,7 +134,7 @@ while running:
     car_pos[0] += math.cos(rad) * car_speed
     car_pos[1] -= math.sin(rad) * car_speed
     
-    # 绘制赛道和终点
+    # 绘制赛道
     pygame.draw.polygon(screen, BLACK, track_outer, 3)
     pygame.draw.polygon(screen, BLACK, track_inner, 3)
 
