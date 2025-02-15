@@ -1,12 +1,42 @@
 import random
 import numpy as np
 
+def random_individual():
+    """
+    生成一个随机的个体，用于遗传算法的初始化。
+    
+    返回：
+    - List[float] 一个随机的个体
+    """
+    individual = []
+    
+    # 定义每个模糊变量的取值范围
+    ranges = [(0, 2), (0, 500), (0, 300)]    
+    
+    # 每个变量有 5 个模糊集，每个模糊集 3 个参数 (左、中、右)
+    for low, high in ranges:
+        for _ in range(15):
+            individual.append(round(random.uniform(low, high),2))
+    
+    # 设定固定的索引（转换为 0-based）
+    fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
+    
+    # 将固定的索引设置为最大最小值
+    for i in range(len(fixed_indices)):
+        if i % 4 == 0 or i % 4 == 1:
+            individual[fixed_indices[i]] = ranges[i // 4][0]
+        if i % 4 == 2 or i % 4 == 3:
+            individual[fixed_indices[i]] = ranges[i // 4][1]
+        
+    return individual
+
 def repair_membership_functions(individual, structure, fixed_indices):
     """
     修复模糊隶属函数参数，确保：
-    1. 每个模糊集的3个参数是递增的。
-    2. 相邻模糊集的衔接关系满足：后一个的第一个参数 ≥ 前一个的最后一个参数。
-    3. 指定的索引处参数不会被修改。
+    1. 交界处先交换 (如交换 0.1 和 0.05)。
+    2. 整个模糊变量的 15 个参数递增排序。
+    3. 交界处再交换回去，确保模糊集完全覆盖。
+    4. 指定的索引处参数不会被修改。
 
     参数：
     - individual: List[float]，个体表示的模糊参数
@@ -16,30 +46,33 @@ def repair_membership_functions(individual, structure, fixed_indices):
     返回：
     - 修复后的 individual（List[float]）
     """
-    repaired = individual[:]
-    index = 0
+    repaired = individual[:]  # 复制原个体，避免修改原数据
+    index = 0  # 当前变量的起始索引
 
     for num_sets in structure:
-        # 取出该变量的所有模糊集参数
-        sets = [repaired[index + i * 3: index + (i + 1) * 3] for i in range(num_sets)]
+        # 获取该变量所有 15 个参数
+        params = repaired[index:index + num_sets * 3]
 
-        # 1. **先交换交界处的参数**
+        # 第一步：先交换交界处
         for i in range(1, num_sets):
-            sets[i - 1][2], sets[i][0] = sets[i][0], sets[i - 1][2]
+            params[i * 3 - 1], params[i * 3] = params[i * 3], params[i * 3 - 1]
 
-        # 2. **确保每个模糊集递增**
-        for i in range(num_sets):
-            if index + i * 3 not in fixed_indices:
-                sets[i] = sorted(sets[i])  # 直接排序保证递增
+        # 第二步：整体递增排序（跳过 fixed_indices）
+        sortable_params = [
+            (i, val) for i, val in enumerate(params) if index + i not in fixed_indices
+        ]
+        sorted_values = sorted(val for _, val in sortable_params)
+        
+        for (i, _), val in zip(sortable_params, sorted_values):
+            params[i] = val  # 只修改非固定索引的值
 
-        # 3. **再交换交界处的参数**
+        # 第三步：再交换回交界处
         for i in range(1, num_sets):
-            if index + i * 3 not in fixed_indices and index + (i - 1) * 3 + 2 not in fixed_indices:
-                sets[i - 1][2], sets[i][0] = max(sets[i - 1][2], sets[i][0]), max(sets[i - 1][2], sets[i][0])
+            params[i * 3 - 1], params[i * 3] = params[i * 3], params[i * 3 - 1]
 
-        # 4. **重新拼接**
-        repaired[index:index + num_sets * 3] = [val for mf in sets for val in mf]
-        index += num_sets * 3
+        # 更新 repaired 个体
+        repaired[index:index + num_sets * 3] = params
+        index += num_sets * 3  # 移动到下一个变量
 
     return repaired
 

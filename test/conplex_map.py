@@ -211,11 +211,11 @@ structure = [5, 5, 5]
 fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
 # 修复模糊隶属函数参数
 individual = repair_membership_functions(individual, structure, fixed_indices)
-individual = [
-        0, 0, 0.1, 0.05, 0.3, 0.5, 0.4, 0.6, 0.9, 0.8, 1.2, 1.5, 1.4, 2, 2,  # speed
-        0, 0, 3, 2, 8, 12, 10, 50, 90, 80, 120, 250, 200, 350, 500,          # front_dist
-        0, 0, 3, 2, 8, 12, 10, 20, 30, 25, 120, 200, 180, 250, 300,          # left_dist
-    ]
+# individual = [
+#         0, 0, 0.1, 0.05, 0.3, 0.5, 0.4, 0.6, 0.9, 0.8, 1.2, 1.5, 1.4, 2, 2,  # speed
+#         0, 0, 3, 2, 8, 12, 10, 50, 90, 80, 120, 250, 200, 350, 500,          # front_dist
+#         0, 0, 3, 2, 8, 12, 10, 20, 30, 25, 120, 200, 180, 250, 300,          # left_dist
+#     ]
 driver = FuzzyDriver(individual)
 
 # 初始化字体
