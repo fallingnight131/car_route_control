@@ -1,11 +1,12 @@
 import pygame
 import time
+import concurrent.futures
 from ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
 from car import Car
 
 # 初始化 Pygame
 pygame.init()
-    
+
 # 屏幕设置
 WIDTH, HEIGHT = 1000, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -40,14 +41,16 @@ check_line = [[(350, 750), (350, 780)], [(550, 630), (550, 680)], [(850, 550), (
               [(250, 350), (250, 400)], [(150, 600), (250, 600)]]
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
+
 # 车辆参数
 structure = [5, 5, 5]
 fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
 bounds = [(0, 0, 0), (2, 500, 300)]
+
+# 生成初始 50 辆车
 cars = []
 for _ in range(50):
     individual = random_individual()
-    # 修复模糊隶属函数参数
     individual = repair_membership_functions(individual, structure, fixed_indices)
     car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
     cars.append(car)
@@ -55,66 +58,66 @@ for _ in range(50):
 # 遗传算法执行多少代
 GENERATIONS = 100
 running = True
+
 # 遗传算法开始
 for generation in range(GENERATIONS):
     if not running:
         break
-    
+
     start_time = time.time()
 
     while time.time() - start_time < 180 and running:
         screen.fill(WHITE)
-        
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        
-        for car in cars:
-            car_points = car.update_info(track, check_line)
+
+        # **使用并行处理车辆更新**
+        car_points_list = []
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = executor.map(lambda car: car.update_info(track, check_line), cars)
+            car_points_list = list(results)
+
+        for car_points in car_points_list:
             if car_points:
-                # 绘制车辆
                 pygame.draw.polygon(screen, RED, car_points)
-        
+
         # 绘制赛道
         pygame.draw.polygon(screen, BLACK, track_outer, 3)
         pygame.draw.polygon(screen, BLACK, track_inner, 3)
-        
+
         # 绘制检查线
         for line in check_line:
             pygame.draw.line(screen, GREEN, line[0], line[1], 2)
-            
+        
         # 在右上角打印现在第几代，以及时间还剩多久
         text = font.render(f"Generation: {generation + 1}", True, BLACK)
         screen.blit(text, (800, 50))
         text = font.render(f"Time Left: {180 - int(time.time() - start_time)}s", True, BLACK)
         screen.blit(text, (800, 100))
-    
-        pygame.display.flip()
-        
-    # 筛选适应度最高的5个存活个体,如果不足5个则全部保留
-    elite = []
+
+        pygame.display.flip()   # 更新屏幕
+
+    # **筛选适应度最高的个体**
     cars.sort(key=lambda x: x.fitness, reverse=True)
-    for car in cars:
-        if len(elite) >= 5:
-            break
-        else:
-            elite.append(car.individual)
-                
-    # 生成下一代个体
+    elite = [car.individual for car in cars][:5]
+
+    # **并行生成下一代**
     cars = []
-    next_individuals = generate_offspring(population=elite, n_offspring=40 - len(elite), 
-                                          structure=structure, fixed_indices=fixed_indices, 
-                                          bounds=bounds)
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        next_individuals = executor.submit(
+            generate_offspring, elite, 40 - len(elite), structure, fixed_indices, bounds
+        ).result()
+
     next_individuals.extend(elite)
     for individual in next_individuals:
-        car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
-        cars.append(car)
-        
-    # 再引入10个随机个体
+        cars.append(Car(individual=individual, pos=[200, 750], angle=0, max_speed=2))
+
+    # **再引入 10 个随机个体**
     for _ in range(10):
         individual = random_individual()
         individual = repair_membership_functions(individual, structure, fixed_indices)
-        car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
-        cars.append(car)
-        
+        cars.append(Car(individual=individual, pos=[200, 750], angle=0, max_speed=2))
+
 pygame.quit()

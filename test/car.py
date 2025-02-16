@@ -58,6 +58,10 @@ class Car:
         # 模糊控制
         acceleration, rotation = self.driver.predict(self.speed, front_dist, left_dist, right_dist)
         
+        # 判断是否搁浅
+        if self.speed ==0 and acceleration <= 0 and rotation == 0:
+            self.alive = False
+        
         if acceleration > 0:
             self.speed = min(self.speed + acceleration, self.max_speed)
         else:
@@ -78,10 +82,6 @@ class Car:
         ]
         
         return car_points
-    
-    def get_info(self):
-        """ 返回车辆最终结果信息 """
-        return self.alive, self.fitness
         
     def evaluate_fitness(self, checkpoints):
         """

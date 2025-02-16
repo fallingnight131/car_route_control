@@ -16,7 +16,7 @@ def random_individual():
     # 每个变量有 5 个模糊集，每个模糊集 3 个参数 (左、中、右)
     for low, high in ranges:
         for _ in range(15):
-            individual.append(round(random.uniform(low, high),2))
+            individual.append(round(random.uniform(low, high), 2))
     
     # 设定固定的索引（转换为 0-based）
     fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
@@ -76,7 +76,6 @@ def repair_membership_functions(individual, structure, fixed_indices):
 
     return repaired
 
-
 def generate_offspring(population, n_offspring, structure, bounds, fixed_indices, mutation_rate=0.1, mutation_scale=0.1):
     """
     让多个个体自由繁衍出 n 个子代，并修复每个子代确保覆盖性，并确保参数不超出上下界。
@@ -129,7 +128,6 @@ if __name__ == '__main__':
         -2, -2, -1.5, -1.7, -1, -0.2, -0.4, 0, 0.1, 0.05, 0.1, 0.15, 0.12, 0.2, 0.2,  # acceleration
         -4, -4, -2, -4, -2, 0, -2, 0, 2, 0, 2, 4, 2, 4, 4                     # rotation
     ]
-
 
     # 设定模糊系统的结构
     structure = [5, 5, 5, 5, 5, 5]
