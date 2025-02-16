@@ -1,5 +1,6 @@
 import pygame
 import time
+import ast
 import os
 import sys
 from ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
@@ -45,12 +46,12 @@ check_line = [[(350, 750), (350, 780)], [(550, 630), (550, 680)], [(850, 550), (
               [(250, 350), (250, 400)], [(150, 600), (250, 600)]]
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
-# 读取elite
+# 读取之前的elite
 elite = []
-with open(f"data/elite_individual.txt", "r") as f:
+with open("data/elite_individual.txt", "r") as f:
     for line in f:
-        elite.append(list(map(float, line.strip().split(","))))
-        
+        elite.append(ast.literal_eval(line.strip())) 
+             
 # 车辆参数
 structure = [5, 5, 5]
 fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
