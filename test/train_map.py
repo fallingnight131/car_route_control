@@ -1,8 +1,13 @@
 import pygame
 import time
+import os
+import sys
 from ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
 from car import Car
 
+# 将根目录添加到环境变量
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+                
 # 初始化 Pygame
 pygame.init()
     
@@ -40,18 +45,30 @@ check_line = [[(350, 750), (350, 780)], [(550, 630), (550, 680)], [(850, 550), (
               [(250, 350), (250, 400)], [(150, 600), (250, 600)]]
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
+# 读取elite
+elite = []
+with open(f"data/elite_individual.txt", "r") as f:
+    for line in f:
+        elite.append(list(map(float, line.strip().split(","))))
+        
 # 车辆参数
 structure = [5, 5, 5]
 fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
-bounds = [(0, 0, 0), (2, 500, 300)]
+lower_bounds = [0] * 60
+upper_bounds = [2] * 15 + [500] * 15 + [300] * 30
+bounds = (lower_bounds, upper_bounds)
 cars = []
-for _ in range(50):
+for _ in range(45):
     individual = random_individual()
     # 修复模糊隶属函数参数
     individual = repair_membership_functions(individual, structure, fixed_indices)
     car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
     cars.append(car)
 
+for individual in elite:
+    car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
+    cars.append(car)
+    
 # 遗传算法执行多少代
 GENERATIONS = 100
 running = True
@@ -99,7 +116,12 @@ for generation in range(GENERATIONS):
             break
         else:
             elite.append(car.individual)
-                
+            
+    # 保存elite
+    with open(f"data/elite_individual.txt", "w") as f:
+        for individual in elite:
+            f.write(str(individual) + "\n")
+       
     # 生成下一代个体
     cars = []
     next_individuals = generate_offspring(population=elite, n_offspring=40 - len(elite), 
