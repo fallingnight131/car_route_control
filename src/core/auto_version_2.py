@@ -6,7 +6,8 @@ from car import Car
 # 添加根目录到 sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from src.core.ga_fuzzy import random_individual, repair_membership_functions
-from src.util.file_util import read_individual
+from src.util.individual_file_util import read_individual
+from src.util.track_file_util import load_track_data
 
 # 初始化 Pygame
 pygame.init()
@@ -22,13 +23,10 @@ RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 
-# **复杂赛道边界**
-track_outer = [(150, 150), (650, 150), (750, 200), (700, 300), (600, 400), (500, 450), (400, 500), (300, 450), (200, 400), (100, 300), (100, 200)]
-track_inner = [(200, 200), (600, 200), (650, 250), (600, 350), (500, 400), (400, 450), (300, 400), (200, 350), (150, 250), (200, 200)]
+# 加载赛道数据
+track_outer, track_inner, check_line = load_track_data("src/config/track_info/auto_2.json")
 track = [track_outer, track_inner]
 
-# 8个检查线
-check_line = []
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
 # 读取之前的elite    

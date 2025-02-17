@@ -6,7 +6,8 @@ from car import Car
 # 添加根目录到 sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from src.core.ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
-from src.util.file_util import read_individual, save_individual
+from src.util.individual_file_util import read_individual, save_individual
+from src.util.track_file_util import load_track_data
 
 # 初始化 Pygame
 pygame.init()
@@ -22,31 +23,14 @@ RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 
-# **复杂赛道边界**
-track_outer = [
-    (150, 750), (150, 600), (200, 550), (330, 500), (350, 400),
-    (250, 400), (200, 350), (150, 300), (150, 250), (150, 100),
-    (300, 50), (500, 100), (650, 200), (750, 350), (850, 400),
-    (900, 450), (900, 550), (850, 620), (620, 700), (550, 680),
-    (520, 680), (400, 780), (180, 780)
-]
-track_inner = [
-    (200, 700), (250, 600), (300, 550), (380, 530), (400, 500),
-    (400, 400), (350, 350), (250, 350), (200, 300), (200, 150),
-    (350, 100), (500, 150), (600, 250), (700, 400), (800, 450),
-    (850, 500), (850, 550), (800, 600), (650, 650), (530, 630),
-    (420, 700), (370, 750), (250, 750)
-]
+# 加载赛道数据
+track_outer, track_inner, check_line = load_track_data("src/config/track_info/train.json")
 track = [track_outer, track_inner]
 
-# 8个检查线
-check_line = [[(350, 750), (350, 780)], [(550, 630), (550, 680)], [(850, 550), (900, 550)],
-              [(750, 350), (750, 425)], [(500, 100), (500, 150)], [(150, 150), (200, 150)], 
-              [(250, 350), (250, 400)], [(150, 600), (250, 600)]]
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
 # 读取之前的elite    
-elite = read_individual("data/elite_individual.txt")
+elite = read_individual("data/ga_train/elite_individual.txt")
              
 # 车辆参数
 structure = [5, 5, 5]
@@ -122,7 +106,7 @@ for generation in range(GENERATIONS):
                     elite.append(car.individual)
                 
         # 保存elite
-        save_individual("data/elite_individual.txt", elite)
+        save_individual("data/ga_train/elite_individual.txt", elite)
         
         # 生成下一代个体
         cars = []
