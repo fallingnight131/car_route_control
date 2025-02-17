@@ -60,7 +60,7 @@ for generation in range(GENERATIONS):
 
     start_time = time.time()
 
-    while time.time() - start_time < 120 and running:
+    while time.time() - start_time < 60 and running:
         screen.fill(WHITE)
 
         for event in pygame.event.get():
@@ -87,7 +87,7 @@ for generation in range(GENERATIONS):
         # 在右上角打印现在第几代，以及时间还剩多久, 以及剩余几辆车
         text = font.render(f"Generation: {generation + 1}", True, BLACK)
         screen.blit(text, (800, 50))
-        text = font.render(f"Time Left: {120 - int(time.time() - start_time)}s", True, BLACK)
+        text = font.render(f"Time Left: {60 - int(time.time() - start_time)}s", True, BLACK)
         screen.blit(text, (800, 100))
         text = font.render(f"Cars Left: {car_num}", True, BLACK)
         screen.blit(text, (800, 150))
