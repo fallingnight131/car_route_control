@@ -14,6 +14,9 @@ class Car:
         :param angle: float 车的朝向角度（0° 指向右）
         :param max_speed: float 最大速度
         :param speed: float 速度
+        :param front_dist: float 前方障碍物距离
+        :param left_dist: float 左侧障碍物距离
+        :param right_dist: float 右侧障碍物距离
         :param max_speed: float 最大速度
         """
         self.individual = individual  # 模糊控制参数
@@ -24,6 +27,9 @@ class Car:
         self.angle = angle
         self.max_speed = max_speed  # 最大速度
         self.speed = 0  # 速度
+        self.front_dist = 0 # 前方障碍物距离
+        self.left_dist = 0  # 左侧障碍物距离
+        self.right_dist = 0 # 右侧障碍物距离
         self.max_speed = 2  # 最大速度
         self.alive = True  # 是否存活
         self.valid_checkpoints = 0  # 有效检查点编号
@@ -41,9 +47,9 @@ class Car:
         outer_distances = self.find_nearest_obstacle(self.pos, self.angle, track_outer)
         inner_distances = self.find_nearest_obstacle(self.pos, self.angle, track_inner)
         # 取更小的那一组距离
-        front_dist = min(outer_distances[0], inner_distances[0])
-        left_dist = min(outer_distances[1], inner_distances[1])
-        right_dist = min(outer_distances[2], inner_distances[2])
+        self.front_dist = min(outer_distances[0], inner_distances[0])
+        self.left_dist = min(outer_distances[1], inner_distances[1])
+        self.right_dist = min(outer_distances[2], inner_distances[2])
         
         # 出界检测
         if self.has_crossed_polygon(self.last_pos, self.pos, track_outer) or self.has_crossed_polygon(self.last_pos, self.pos, track_inner):
@@ -56,7 +62,7 @@ class Car:
         self.last_pos = self.pos.copy()
         
         # 模糊控制
-        acceleration, rotation = self.driver.predict(self.speed, front_dist, left_dist, right_dist)
+        acceleration, rotation = self.driver.predict(self.speed, self.front_dist, self.left_dist, self.right_dist)
         
         # 判断是否搁浅
         if self.speed ==0 and acceleration <= 0 and rotation == 0:
@@ -161,7 +167,8 @@ class Car:
 
     def update_fitness(self, check_line):
         """ 更新某辆车的适应度 """
-        A, B = check_line[self.valid_checkpoints]
-        if self.has_crossed_line(A, B, self.last_pos, self.pos):
-            self.valid_checkpoints = (self.valid_checkpoints + 1) % len(check_line)
-            self.fitness += 1
+        if check_line:
+            A, B = check_line[self.valid_checkpoints]
+            if self.has_crossed_line(A, B, self.last_pos, self.pos):
+                self.valid_checkpoints = (self.valid_checkpoints + 1) % len(check_line)
+                self.fitness += 1

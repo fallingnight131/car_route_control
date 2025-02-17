@@ -1,9 +1,13 @@
 import pygame
-import math
-import random
+import time
 import os
 import sys
-from fuzzy import FuzzyDriver
+from car import Car
+# 添加根目录到 sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+from src.car_route_control.core.ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
+from src.car_route_control.util.file_util import read_individual
+
 
 # 添加根目录到 sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
@@ -22,15 +26,6 @@ RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 
-# 车辆参数
-car_pos = [200, 750]  # 车辆初始位置
-last_pos = car_pos.copy()
-car_angle = 0  # 车辆方向（角度）
-car_speed = 0  # 车辆速度
-ACCELERATION = 0.2  # 加速度
-MAX_SPEED = 2  # 最大速度
-ROTATION_SPEED = 4  # 旋转速率（度）
-
 # **复杂赛道边界**
 track_outer = [
     (150, 750), (150, 600), (200, 550), (330, 500), (350, 400),
@@ -46,249 +41,72 @@ track_inner = [
     (850, 500), (850, 550), (800, 600), (650, 650), (530, 630),
     (420, 700), (370, 750), (250, 750)
 ]
-
 track = [track_outer, track_inner]
 
-# 数据记录
-player_data = []
-
-def distance(point1, point2):
-    """计算欧几里得距离"""
-    return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
-
-def find_nearest_obstacle(car_pos, car_angle, track):
-    """计算车辆前方、左侧、右侧最近的赛道边界点"""
-    directions = [0, 90, -90]  # 前方、左侧、右侧
-    min_distances = [float('inf'), float('inf'), float('inf')]
-
-    for i, direction in enumerate(directions):
-        angle = math.radians(car_angle + direction)
-        start = car_pos
-        end = (car_pos[0] + math.cos(angle) * WIDTH, car_pos[1] - math.sin(angle) * HEIGHT)
-
-        for j in range(len(track)):
-            p1, p2 = track[j], track[(j + 1) % len(track)]
-            intersect = line_intersection(start, end, p1, p2)
-            if intersect:
-                min_distances[i] = min(min_distances[i], distance(car_pos, intersect))
-
-    return min_distances
-
-def line_intersection(A, B, C, D):
-    """计算两条线段 AB 和 CD 是否相交，返回交点"""
-    def ccw(P, Q, R):
-        return (R[1] - P[1]) * (Q[0] - P[0]) > (Q[1] - P[1]) * (R[0] - P[0])
-
-    if ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D):
-        # 计算交点
-        dx1, dy1 = B[0] - A[0], B[1] - A[1]
-        dx2, dy2 = D[0] - C[0], D[1] - C[1]
-        denom = dx1 * dy2 - dy1 * dx2
-
-        if denom == 0:
-            return None
-
-        t = ((A[0] - C[0]) * dy2 - (A[1] - C[1]) * dx2) / denom
-        return (A[0] + t * dx1, A[1] + t * dy1)
-
-    return None
-
-
-def repair_membership_functions(individual, structure, fixed_indices):
-    """
-    修复模糊隶属函数参数，确保：
-    1. 交界处先交换 (如交换 0.1 和 0.05)。
-    2. 整个模糊变量的 15 个参数递增排序。
-    3. 交界处再交换回去，确保模糊集完全覆盖。
-    4. 指定的索引处参数不会被修改。
-
-    参数：
-    - individual: List[float]，个体表示的模糊参数
-    - structure: List[int]，每个变量的模糊集数量（如 [5, 5, 5, 5, 5, 5]）
-    - fixed_indices: Set[int]，不允许修改的索引集合
-
-    返回：
-    - 修复后的 individual（List[float]）
-    """
-    repaired = individual[:]  # 复制原个体，避免修改原数据
-    index = 0  # 当前变量的起始索引
-
-    for num_sets in structure:
-        # 获取该变量所有 15 个参数
-        params = repaired[index:index + num_sets * 3]
-
-        # 第一步：先交换交界处
-        for i in range(1, num_sets):
-            params[i * 3 - 1], params[i * 3] = params[i * 3], params[i * 3 - 1]
-
-        # 第二步：整体递增排序（跳过 fixed_indices）
-        sortable_params = [
-            (i, val) for i, val in enumerate(params) if index + i not in fixed_indices
-        ]
-        sorted_values = sorted(val for _, val in sortable_params)
-        
-        for (i, _), val in zip(sortable_params, sorted_values):
-            params[i] = val  # 只修改非固定索引的值
-
-        # 第三步：再交换回交界处
-        for i in range(1, num_sets):
-            params[i * 3 - 1], params[i * 3] = params[i * 3], params[i * 3 - 1]
-
-        # 更新 repaired 个体
-        repaired[index:index + num_sets * 3] = params
-        index += num_sets * 3  # 移动到下一个变量
-
-    return repaired
-
-def line_intersection(A, B, C, D):
-    """计算两条线段 AB 和 CD 是否相交，返回交点"""
-    def ccw(P, Q, R):
-        return (R[1] - P[1]) * (Q[0] - P[0]) > (Q[1] - P[1]) * (R[0] - P[0])
-
-    if ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D):
-        # 计算交点
-        dx1, dy1 = B[0] - A[0], B[1] - A[1]
-        dx2, dy2 = D[0] - C[0], D[1] - C[1]
-        denom = dx1 * dy2 - dy1 * dx2
-
-        if denom == 0:
-            return None
-
-        t = ((A[0] - C[0]) * dy2 - (A[1] - C[1]) * dx2) / denom
-        return (A[0] + t * dx1, A[1] + t * dy1)
-
-    return None
-
-
-def has_crossed_line(A, B, last_pos, car_pos):
-    """ 判断小车是否穿过了一条线 """
-    return line_intersection(last_pos, car_pos, A, B) is not None
-
-
-def has_crossed_polygon(last_pos, car_pos, polygon):
-    """
-    判断车辆从 last_pos 移动到 car_pos 时是否穿过了多边形边界。
-    
-    :param last_pos: (x1, y1) 上一时刻的坐标
-    :param car_pos: (x2, y2) 现在的坐标
-    :param polygon: List[(x, y)] 赛道外边界顶点列表
-    :return: bool 是否穿过多边形
-    """
-    for i in range(len(polygon)):
-        A, B = polygon[i], polygon[(i + 1) % len(polygon)]
-        if has_crossed_line(A, B, last_pos, car_pos):
-            return True
-    return False
-
-def random_individual():
-    individual = []
-    
-    # 定义每个模糊变量的取值范围
-    ranges = [(0, 2), (0, 500), (0, 300)]    
-    
-    # 每个变量有 5 个模糊集，每个模糊集 3 个参数 (左、中、右)
-    for low, high in ranges:
-        for _ in range(15):
-            individual.append(round(random.uniform(low, high),2))
-    
-    # 设定固定的索引（转换为 0-based）
-    fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
-    
-    # 将固定的索引设置为最大最小值
-    for i in range(len(fixed_indices)):
-        if i % 4 == 0 or i % 4 == 1:
-            individual[fixed_indices[i]] = ranges[i // 4][0]
-        if i % 4 == 2 or i % 4 == 3:
-            individual[fixed_indices[i]] = ranges[i // 4][1]
-        
-    return individual
-
-individual = random_individual()
-structure = [5, 5, 5]
-fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
-# 修复模糊隶属函数参数
-individual = repair_membership_functions(individual, structure, fixed_indices)
-individual = [
-        0, 0, 0.1, 0.05, 0.3, 0.5, 0.4, 0.6, 0.9, 0.8, 1.2, 1.5, 1.4, 2, 2,  # speed
-        0, 0, 3, 2, 8, 12, 10, 50, 90, 80, 120, 250, 200, 350, 500,          # front_dist
-        0, 0, 3, 2, 8, 12, 10, 20, 30, 25, 120, 200, 180, 250, 300,          # left_dist
-    ]
-driver = FuzzyDriver(individual)
-
-# 初始化字体
-pygame.font.init()
+# 8个检查线
+check_line = []
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
+# 读取之前的elite    
+elite = read_individual("data/elite_individual.txt")
+             
+# 车辆参数
+structure = [5, 5, 5]
+fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
+lower_bounds = [0] * 60
+upper_bounds = [2] * 15 + [500] * 15 + [300] * 30
+bounds = (lower_bounds, upper_bounds)
+if elite:
+    car = Car(individual=elite[0], pos=[200, 750], angle=0, max_speed=2)
+else:
+    individual = random_individual()
+    # 修复模糊隶属函数参数
+    individual = repair_membership_functions(individual, structure, fixed_indices)
+    car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
+
+# 遗传算法执行多少代
+GENERATIONS = 100
 running = True
-while running:
-    screen.fill(WHITE)
-    
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+# 遗传算法开始
+for generation in range(GENERATIONS):
+    if not running:
+        break
+
+    start_time = time.time()
+
+    while time.time() - start_time < 120 and running:
+        screen.fill(WHITE)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        
+        car_points = car.update_info(track, check_line)
+        if car_points:
+            # 绘制车辆
+            pygame.draw.polygon(screen, RED, car_points)
+        else:
             running = False
-    
-    keys = pygame.key.get_pressed()
-    left = keys[pygame.K_LEFT]
-    right = keys[pygame.K_RIGHT]
-    accelerate = keys[pygame.K_SPACE]
- 
-    # 计算前方、左侧、右侧最近的障碍物距离
-    outer_distances = find_nearest_obstacle(car_pos, car_angle, track_outer)
-    inner_distances = find_nearest_obstacle(car_pos, car_angle, track_inner)
-
-    # 取更小的那一组距离
-    front_dist = min(outer_distances[0], inner_distances[0])
-    left_dist = min(outer_distances[1], inner_distances[1])
-    right_dist = min(outer_distances[2], inner_distances[2])
-
-    # 碰撞检测
-    if has_crossed_polygon(last_pos, car_pos, track_outer) or has_crossed_polygon(last_pos, car_pos, track_inner):
-        print("Game Over: Collision Detected")
-        running = False
-    
-    # 记录上一时刻的位置
-    last_pos = car_pos.copy()
-    
-    # 模糊控制
-    acceleration, rotation = driver.predict(car_speed, front_dist, left_dist, right_dist)
-    
-    if acceleration > 0:
-        car_speed = min(car_speed + acceleration, MAX_SPEED)
-    else:
-        car_speed = max(car_speed + acceleration, 0)
+            print("Car out of track!")
         
-    car_angle += rotation
+        # 绘制赛道
+        pygame.draw.polygon(screen, BLACK, track_outer, 3)
+        pygame.draw.polygon(screen, BLACK, track_inner, 3)
         
-    rad = math.radians(car_angle)
-    car_pos[0] += math.cos(rad) * car_speed
-    car_pos[1] -= math.sin(rad) * car_speed
+        # 绘制检查线
+        for line in check_line:
+            pygame.draw.line(screen, GREEN, line[0], line[1], 2)
+            
+        # 在右上角打印现在小车的速度、前面障碍物的距离、左右障碍物的距离
+        speed_text = font.render("Speed: {:.2f}".format(car.speed), True, BLACK)
+        screen.blit(speed_text, (800, 50))
+        front_text = font.render("Front: {:.2f}".format(car.front_dist), True, BLACK)
+        screen.blit(front_text, (800, 100))
+        left_text = font.render("Left: {:.2f}".format(car.left_dist), True, BLACK)
+        screen.blit(left_text, (800, 150))
+        right_text = font.render("Right: {:.2f}".format(car.right_dist), True, BLACK)
+        screen.blit(right_text, (800, 200))
     
-    # 绘制赛道和终点
-    pygame.draw.polygon(screen, BLACK, track_outer, 3)
-    pygame.draw.polygon(screen, BLACK, track_inner, 3)
-
-    # 绘制车辆（三角形箭头） 
-    car_points = [
-        (car_pos[0] + math.cos(rad) * 10, car_pos[1] - math.sin(rad) * 10),
-        (car_pos[0] + math.cos(rad + 2.5) * 10, car_pos[1] - math.sin(rad + 2.5) * 10),
-        (car_pos[0] + math.cos(rad - 2.5) * 10, car_pos[1] - math.sin(rad - 2.5) * 10)
-    ]
-    pygame.draw.polygon(screen, RED, car_points)
-    
-        # 显示车速和距离信息
-    text_surface = font.render(f"Speed: {car_speed:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 20))
-
-    text_surface = font.render(f"Front Dist: {front_dist:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 50))
-
-    text_surface = font.render(f"Left Dist: {left_dist:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 80))
-
-    text_surface = font.render(f"Right Dist: {right_dist:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 110))
-    
-    pygame.display.flip()
-    # pygame.time.delay(30)
-    
+        pygame.display.flip()
+        
 pygame.quit()

@@ -1,13 +1,12 @@
 import pygame
 import time
-import ast
 import os
 import sys
-from ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
 from car import Car
-
 # 添加根目录到 sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+from src.car_route_control.core.ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
+from src.car_route_control.util.file_util import read_individual, save_individual
 
 # 初始化 Pygame
 pygame.init()
@@ -46,20 +45,8 @@ check_line = [[(350, 750), (350, 780)], [(550, 630), (550, 680)], [(850, 550), (
               [(250, 350), (250, 400)], [(150, 600), (250, 600)]]
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
-# 确保目录 "data" 存在
-if not os.path.exists("data"):
-    os.makedirs("data")
-
-# 确保文件 "elite_individual.txt" 存在
-if not os.path.exists("data/elite_individual.txt"):
-    with open("data/elite_individual.txt", "w") as f:
-        pass  # 创建空文件
-    
 # 读取之前的elite    
-elite = []
-with open("data/elite_individual.txt", "r") as f:
-    for line in f:
-        elite.append(ast.literal_eval(line.strip())) 
+elite = read_individual("data/elite_individual.txt")
              
 # 车辆参数
 structure = [5, 5, 5]
@@ -86,12 +73,12 @@ running = True
 for generation in range(GENERATIONS):
     if not running:
         break
-    
+
     start_time = time.time()
 
     while time.time() - start_time < 120 and running:
         screen.fill(WHITE)
-        
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -135,9 +122,7 @@ for generation in range(GENERATIONS):
                     elite.append(car.individual)
                 
         # 保存elite
-        with open(f"data/elite_individual.txt", "w") as f:
-            for individual in elite:
-                f.write(str(individual) + "\n")
+        save_individual("data/elite_individual.txt", elite)
         
         # 生成下一代个体
         cars = []
