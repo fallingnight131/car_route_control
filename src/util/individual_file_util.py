@@ -39,6 +39,6 @@ def save_individual(file_path, individuals):
         os.makedirs(dir_path)
     
     # 保存个体数据
-    with open(f"file_path", "w") as f:
+    with open(file_path, "w") as f:
             for individual in individuals:
                 f.write(str(individual) + "\n")
