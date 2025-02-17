@@ -1,18 +1,16 @@
 import pygame
-import math
-import csv
-import uuid
+import time
+import ast
 import os
 import sys
+from ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
+from car import Car
 
-# 添加根目录到 sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+# 将根目录添加到环境变量
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+                
 # 初始化 Pygame
 pygame.init()
-
-# 生成唯一 ID
-unique_id = uuid.uuid4().hex  
     
 # 屏幕设置
 WIDTH, HEIGHT = 1000, 800
@@ -25,168 +23,128 @@ RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 
-# 车辆参数
-car_pos = [200, 750]  # 车辆初始位置
-last_pos = car_pos.copy()  # 上一帧车辆位置
-car_angle = 0  # 车辆方向（角度）
-car_speed = 0  # 车辆速度
-ACCELERATION = 0.2  # 加速度
-MAX_SPEED = 6  # 最大速度
-ROTATION_SPEED = 4  # 旋转速率（度）
-
 # **复杂赛道边界**
 track_outer = [
     (150, 750), (150, 600), (200, 550), (330, 500), (350, 400),
     (250, 400), (200, 350), (150, 300), (150, 250), (150, 100),
     (300, 50), (500, 100), (650, 200), (750, 350), (850, 400),
-    (900, 450), (900, 550), (850, 620), (620, 700), (550, 650),
-    (520, 680), (450, 780), (180, 780)
+    (900, 450), (900, 550), (850, 620), (620, 700), (550, 680),
+    (520, 680), (400, 780), (180, 780)
 ]
 track_inner = [
     (200, 700), (250, 600), (300, 550), (380, 530), (400, 500),
     (400, 400), (350, 350), (250, 350), (200, 300), (200, 150),
     (350, 100), (500, 150), (600, 250), (700, 400), (800, 450),
-    (850, 500), (850, 550), (800, 600), (650, 650), (550, 600),
-    (400, 620), (350, 750), (250, 750)
+    (850, 500), (850, 550), (800, 600), (650, 650), (530, 630),
+    (420, 700), (370, 750), (250, 750)
 ]
+track = [track_outer, track_inner]
 
 # 8个检查线
-check_line = [[(350, 750), (350, 780)], [(550, 600), (550, 650)], [(850, 550), (900, 550)],
+check_line = [[(350, 750), (350, 780)], [(550, 630), (550, 680)], [(850, 550), (900, 550)],
               [(750, 350), (750, 425)], [(500, 100), (500, 150)], [(150, 150), (200, 150)], 
-              [(250, 350), (250, 400)],[(150, 600), (250, 600)]]
-
-
-# 数据记录
-player_data = []
-
-def distance(point1, point2):
-    """计算欧几里得距离"""
-    return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
-
-def find_nearest_obstacle(car_pos, car_angle, track):
-    """计算车辆前方、左侧、右侧最近的赛道边界点"""
-    directions = [0, 90, -90]  # 前方、左侧、右侧
-    min_distances = [float('inf'), float('inf'), float('inf')]
-
-    for i, direction in enumerate(directions):
-        angle = math.radians(car_angle + direction)
-        start = car_pos
-        end = (car_pos[0] + math.cos(angle) * WIDTH, car_pos[1] - math.sin(angle) * HEIGHT)
-
-        for j in range(len(track)):
-            p1, p2 = track[j], track[(j + 1) % len(track)]
-            intersect = line_intersection(start, end, p1, p2)
-            if intersect:
-                min_distances[i] = min(min_distances[i], distance(car_pos, intersect))
-
-    return min_distances
-
-def line_intersection(A, B, C, D):
-    """计算两条线段 AB 和 CD 是否相交，返回交点"""
-    def ccw(P, Q, R):
-        return (R[1] - P[1]) * (Q[0] - P[0]) > (Q[1] - P[1]) * (R[0] - P[0])
-
-    if ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D):
-        # 计算交点
-        dx1, dy1 = B[0] - A[0], B[1] - A[1]
-        dx2, dy2 = D[0] - C[0], D[1] - C[1]
-        denom = dx1 * dy2 - dy1 * dx2
-
-        if denom == 0:
-            return None
-
-        t = ((A[0] - C[0]) * dy2 - (A[1] - C[1]) * dx2) / denom
-        return (A[0] + t * dx1, A[1] + t * dy1)
-
-    return None
-
-
-def has_crossed_line(A, B, last_pos, car_pos):
-    """ 判断小车是否穿过了一条检查线 """
-    return line_intersection(last_pos, car_pos, A, B) is not None
-
-def update_fitness(car, last_pos, car_pos):
-    """ 更新某辆车的适应度 """
-    valid_checkpoints = car["valid_checkpoints"]
-    A, B = check_line[valid_checkpoints]
-    if has_crossed_line(A, B, last_pos, car_pos):
-        car["valid_checkpoints"] = (valid_checkpoints + 1) % len(check_line)
-        car["fitness"] += 1
-            
-cars = [
-    {"id": 1, "fitness": 0, "valid_checkpoints": 0}  # 只有第1个检查线最初有效
-]
-            
+              [(250, 350), (250, 400)], [(150, 600), (250, 600)]]
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
+# 读取之前的elite
+elite = []
+with open("data/elite_individual.txt", "r") as f:
+    for line in f:
+        elite.append(ast.literal_eval(line.strip())) 
+             
+# 车辆参数
+structure = [5, 5, 5]
+fixed_indices = [0, 1, 13, 14, 15, 16, 28, 29, 30, 31, 43, 44]
+lower_bounds = [0] * 60
+upper_bounds = [2] * 15 + [500] * 15 + [300] * 30
+bounds = (lower_bounds, upper_bounds)
+cars = []
+for _ in range(7):
+    individual = random_individual()
+    # 修复模糊隶属函数参数
+    individual = repair_membership_functions(individual, structure, fixed_indices)
+    car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
+    cars.append(car)
+
+for individual in elite:
+    car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
+    cars.append(car)
+    
+# 遗传算法执行多少代
+GENERATIONS = 100
 running = True
-while running:
-    screen.fill(WHITE)
+# 遗传算法开始
+for generation in range(GENERATIONS):
+    if not running:
+        break
     
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-    
-    keys = pygame.key.get_pressed()
-    left = keys[pygame.K_LEFT]
-    right = keys[pygame.K_RIGHT]
-    accelerate = keys[pygame.K_SPACE]
- 
-    # 计算前方、左侧、右侧最近的障碍物距离
-    outer_distances = find_nearest_obstacle(car_pos, car_angle, track_outer)
-    inner_distances = find_nearest_obstacle(car_pos, car_angle, track_inner)
+    start_time = time.time()
 
-    # 取更小的那一组距离
-    front_dist = min(outer_distances[0], inner_distances[0])
-    left_dist = min(outer_distances[1], inner_distances[1])
-    right_dist = min(outer_distances[2], inner_distances[2])
-
-    # 碰撞检测
-    if front_dist < 5 or left_dist < 5 or right_dist < 5:
-        print("Game Over: Collision Detected")
-        running = False
-    
-    # 检测是否到检查线
-    update_fitness(cars[0], last_pos, car_pos)
-    
-    # 记录上一时刻的位置
-    last_pos = car_pos.copy()
-    
-    # 更新车辆信息
-    if left:
-       car_angle += ROTATION_SPEED
-    if right:
-        car_angle -= ROTATION_SPEED
-    if accelerate:
-        car_speed = min(car_speed + ACCELERATION, MAX_SPEED)
-    else:
-        car_speed = max(car_speed - ACCELERATION, 0)
+    while time.time() - start_time < 120 and running:
+        screen.fill(WHITE)
         
-    rad = math.radians(car_angle)
-    car_pos[0] += math.cos(rad) * car_speed
-    car_pos[1] -= math.sin(rad) * car_speed
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        
+        car_num = len(cars)
+        for car in cars:
+            car_points = car.update_info(track, check_line)
+            if car_points:
+                # 绘制车辆
+                pygame.draw.polygon(screen, RED, car_points)
+            else:
+                car_num -= 1
+        
+        # 绘制赛道
+        pygame.draw.polygon(screen, BLACK, track_outer, 3)
+        pygame.draw.polygon(screen, BLACK, track_inner, 3)
+        
+        # 绘制检查线
+        for line in check_line:
+            pygame.draw.line(screen, GREEN, line[0], line[1], 2)
+            
+        # 在右上角打印现在第几代，以及时间还剩多久, 以及剩余几辆车
+        text = font.render(f"Generation: {generation + 1}", True, BLACK)
+        screen.blit(text, (800, 50))
+        text = font.render(f"Time Left: {120 - int(time.time() - start_time)}s", True, BLACK)
+        screen.blit(text, (800, 100))
+        text = font.render(f"Cars Left: {car_num}", True, BLACK)
+        screen.blit(text, (800, 150))
     
-    # 绘制赛道
-    pygame.draw.polygon(screen, BLACK, track_outer, 3)
-    pygame.draw.polygon(screen, BLACK, track_inner, 3)
-    
-    # 绘制检查线
-    for line in check_line:
-        pygame.draw.line(screen, GREEN, line[0], line[1], 2)
-    
-    # 绘制车辆（三角形箭头） 
-    car_points = [
-        (car_pos[0] + math.cos(rad) * 10, car_pos[1] - math.sin(rad) * 10),
-        (car_pos[0] + math.cos(rad + 2.5) * 10, car_pos[1] - math.sin(rad + 2.5) * 10),
-        (car_pos[0] + math.cos(rad - 2.5) * 10, car_pos[1] - math.sin(rad - 2.5) * 10)
-    ]
-    # 在右上角显示小车的适应度。
-    text = font.render(f"Fitness: {cars[0]['fitness']}", True, BLACK)
-    screen.blit(text, (WIDTH - 200, 20))
-    
-    pygame.draw.polygon(screen, RED, car_points)
-    
-    pygame.display.flip()
-    pygame.time.delay(30)
-    
+        pygame.display.flip()
+        
+    if running:
+        # 筛选适应度最高的5个存活个体,如果不足5个则全部保留
+        elite = []
+        cars.sort(key=lambda x: x.fitness, reverse=True)
+        for car in cars:
+            if len(elite) >= 3:
+                break
+            else:
+                if car.individual not in elite:
+                    elite.append(car.individual)
+                
+        # 保存elite
+        with open(f"data/elite_individual.txt", "w") as f:
+            for individual in elite:
+                f.write(str(individual) + "\n")
+        
+        # 生成下一代个体
+        cars = []
+        next_individuals = generate_offspring(population=elite, n_offspring=8 - len(elite), 
+                                            structure=structure, fixed_indices=fixed_indices, 
+                                            bounds=bounds)
+        next_individuals.extend(elite)
+        for individual in next_individuals:
+            car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
+            cars.append(car)
+            
+        # 再引入2个随机个体
+        for _ in range(2):
+            individual = random_individual()
+            individual = repair_membership_functions(individual, structure, fixed_indices)
+            car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
+            cars.append(car)
+        
 pygame.quit()

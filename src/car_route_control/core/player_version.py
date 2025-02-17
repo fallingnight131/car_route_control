@@ -1,11 +1,12 @@
 import pygame
 import math
+import csv
 import uuid
 import os
 import sys
-from fuzzy import FuzzyDriver
+
 # 添加根目录到 sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 # 初始化 Pygame
 pygame.init()
@@ -25,17 +26,36 @@ BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 
 # 车辆参数
-car_pos = [400, 475]  # 车辆初始位置
+car_pos = [200, 750]  # 车辆初始位置
 car_angle = 0  # 车辆方向（角度）
 car_speed = 0  # 车辆速度
 ACCELERATION = 0.2  # 加速度
-MAX_SPEED = 2  # 最大速度
+MAX_SPEED = 6  # 最大速度
 ROTATION_SPEED = 4  # 旋转速率（度）
 
 # **复杂赛道边界**
-track_outer = [(100, 100), (700, 100), (750, 200), (700, 300), (600, 400), (500, 450), (400, 500), (300, 450), (200, 400), (100, 300), (50, 200), (100, 100)]
-track_inner = [(200, 200), (600, 200), (650, 250), (600, 350), (500, 400), (400, 450), (300, 400), (200, 350), (150, 250), (200, 200)]
+track_outer = [
+    (150, 750), (150, 600), (200, 550), (330, 500), (350, 400),
+    (250, 400), (200, 350), (150, 300), (150, 250), (150, 100),
+    (300, 50), (500, 100), (650, 200), (750, 350), (850, 400),
+    (900, 450), (900, 550), (850, 620), (620, 700), (550, 650),
+    (420, 680), (400, 780), (150, 780)
+]
+track_inner = [
+    (150, 700), (250, 600), (300, 550), (380, 530), (400, 500),
+    (400, 400), (350, 350), (250, 350), (200, 300), (200, 150),
+    (350, 100), (500, 150), (600, 250), (700, 400), (800, 450),
+    (850, 500), (850, 550), (800, 600), (650, 650), (550, 600),
+    (400, 620), (350, 750), (250, 750)
+]
 
+# 终点线
+goal_line = [(150, 600), (250, 600)]
+
+# 创建 data 文件夹
+data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), 'data')
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
 
 # 数据记录
 player_data = []
@@ -81,12 +101,6 @@ def line_intersection(A, B, C, D):
 
     return None
 
-driver = FuzzyDriver()
-
-# 初始化字体
-pygame.font.init()
-font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
-
 running = True
 while running:
     screen.fill(WHITE)
@@ -110,29 +124,33 @@ while running:
     right_dist = min(outer_distances[2], inner_distances[2])
 
     # 碰撞检测
-    if front_dist < 0 or left_dist < 0 or right_dist < 0:
+    if front_dist < 5 or left_dist < 5 or right_dist < 5:
         print("Game Over: Collision Detected")
         running = False
     
-    # 模糊控制
-    acceleration, rotation = driver.predict(car_speed, front_dist, left_dist, right_dist)
+    # 检测是否到达终点
+    if goal_line[0][0] <= car_pos[0] <= goal_line[1][0] and goal_line[0][1] <= car_pos[1] <= goal_line[0][1] + 6:
+        print("Success: Reached Goal")
+        with open(f"data/player_data_{unique_id}.csv", "w", newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Speed", "Front Distance", "Left Distance", "Right Distance", "Action", "Acceleration"])
+            writer.writerows(player_data)
+        running = False
+    
+    # 记录数据
+    action = "left" if left else "right" if right else "straight"
+    accel = "accelerate" if accelerate else "decelerate"
+    player_data.append([car_speed, front_dist, left_dist, right_dist, action, accel])
     
     # 更新车辆信息
-    # if left:
-    #    car_angle += ROTATION_SPEED
-    # if right:
-    #     car_angle -= ROTATION_SPEED
-    # if accelerate:
-    #     car_speed = min(car_speed + ACCELERATION, MAX_SPEED)
-    # else:
-    #     car_speed = max(car_speed - ACCELERATION, 0)
-    
-    if acceleration > 0:
-        car_speed = min(car_speed + acceleration, MAX_SPEED)
+    if left:
+       car_angle += ROTATION_SPEED
+    if right:
+        car_angle -= ROTATION_SPEED
+    if accelerate:
+        car_speed = min(car_speed + ACCELERATION, MAX_SPEED)
     else:
-        car_speed = max(car_speed + acceleration, 0)
-        
-    car_angle += rotation
+        car_speed = max(car_speed - ACCELERATION, 0)
         
     rad = math.radians(car_angle)
     car_pos[0] += math.cos(rad) * car_speed
@@ -141,7 +159,8 @@ while running:
     # 绘制赛道和终点
     pygame.draw.polygon(screen, BLACK, track_outer, 3)
     pygame.draw.polygon(screen, BLACK, track_inner, 3)
-
+    pygame.draw.line(screen, GREEN, goal_line[0], goal_line[1], 5)
+    
     # 绘制车辆（三角形箭头） 
     car_points = [
         (car_pos[0] + math.cos(rad) * 10, car_pos[1] - math.sin(rad) * 10),
@@ -149,19 +168,6 @@ while running:
         (car_pos[0] + math.cos(rad - 2.5) * 10, car_pos[1] - math.sin(rad - 2.5) * 10)
     ]
     pygame.draw.polygon(screen, RED, car_points)
-    
-        # 显示车速和距离信息
-    text_surface = font.render(f"Speed: {car_speed:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 20))
-
-    text_surface = font.render(f"Front Dist: {front_dist:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 50))
-
-    text_surface = font.render(f"Left Dist: {left_dist:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 80))
-
-    text_surface = font.render(f"Right Dist: {right_dist:.2f}", True, BLACK)
-    screen.blit(text_surface, (WIDTH - 200, 110))
     
     pygame.display.flip()
     pygame.time.delay(30)
