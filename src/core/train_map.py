@@ -59,7 +59,7 @@ for generation in range(GENERATIONS):
         break
 
     start_time = time.time()
-    run_time = max((generation + 1) * 60, 240)
+    run_time = min((generation + 1) * 60, 240)
 
     while time.time() - start_time < run_time and running:
         screen.fill(WHITE)
