@@ -6,7 +6,7 @@ from car import Car
 # 添加根目录到 sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from src.core.ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
-from src.util.file_util import read_individual
+from src.util.file_util import read_individual, save_individual
 
 # 初始化 Pygame
 pygame.init()
