@@ -6,7 +6,7 @@ import os
 import sys
 
 # 添加根目录到 sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # 初始化 Pygame
 pygame.init()

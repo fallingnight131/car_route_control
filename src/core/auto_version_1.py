@@ -4,10 +4,9 @@ import os
 import sys
 from car import Car
 # 添加根目录到 sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-from src.car_route_control.core.ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
-from src.car_route_control.util.file_util import read_individual
-
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from src.core.ga_fuzzy import random_individual, repair_membership_functions
+from src.util.file_util import read_individual
 
 # 添加根目录到 sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
