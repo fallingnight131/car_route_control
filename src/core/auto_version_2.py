@@ -30,7 +30,7 @@ track = [track_outer, track_inner]
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
 # 读取之前的elite    
-elite = read_individual("data/elite_individual.txt")
+elite = read_individual("data/ga_train/elite_individual.txt")
              
 # 车辆参数
 structure = [5, 5, 5]
