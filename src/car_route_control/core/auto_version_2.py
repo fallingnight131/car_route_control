@@ -1,6 +1,5 @@
 import pygame
 import math
-import uuid
 import os
 import sys
 from fuzzy import FuzzyDriver
@@ -8,10 +7,7 @@ from fuzzy import FuzzyDriver
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 初始化 Pygame
-pygame.init()
-
-# 生成唯一 ID
-unique_id = uuid.uuid4().hex  
+pygame.init() 
     
 # 屏幕设置
 WIDTH, HEIGHT = 1000, 800

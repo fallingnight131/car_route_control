@@ -6,12 +6,12 @@ import sys
 from ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
 from car import Car
 
-# 将根目录添加到环境变量
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-                
+# 添加根目录到 sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+
 # 初始化 Pygame
 pygame.init()
-    
+
 # 屏幕设置
 WIDTH, HEIGHT = 1000, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -46,7 +46,16 @@ check_line = [[(350, 750), (350, 780)], [(550, 630), (550, 680)], [(850, 550), (
               [(250, 350), (250, 400)], [(150, 600), (250, 600)]]
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
 
-# 读取之前的elite
+# 确保目录 "data" 存在
+if not os.path.exists("data"):
+    os.makedirs("data")
+
+# 确保文件 "elite_individual.txt" 存在
+if not os.path.exists("data/elite_individual.txt"):
+    with open("data/elite_individual.txt", "w") as f:
+        pass  # 创建空文件
+    
+# 读取之前的elite    
 elite = []
 with open("data/elite_individual.txt", "r") as f:
     for line in f:
@@ -59,7 +68,7 @@ lower_bounds = [0] * 60
 upper_bounds = [2] * 15 + [500] * 15 + [300] * 30
 bounds = (lower_bounds, upper_bounds)
 cars = []
-for _ in range(7):
+for _ in range(10-len(elite)):
     individual = random_individual()
     # 修复模糊隶属函数参数
     individual = repair_membership_functions(individual, structure, fixed_indices)
