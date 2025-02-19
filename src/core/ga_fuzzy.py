@@ -86,7 +86,7 @@ def repair_membership_functions(individual, structure, fixed_indices):
     return repaired
 
 
-def generate_offspring(population, n_offspring, structure, bounds, fixed_indices, mutation_rate=0.1, mutation_scale=0.1):
+def generate_offspring(population, n_offspring, structure, bounds, fixed_indices, crossover_rate=0.8, mutation_rate=0.1, mutation_scale=0.1):
     """
     让多个个体自由繁衍出 n 个子代，并修复每个子代确保覆盖性，并确保参数不超出上下界。
 
@@ -111,9 +111,12 @@ def generate_offspring(population, n_offspring, structure, bounds, fixed_indices
         # 1. **随机选两个不同的父代**
         parent1, parent2 = random.sample(population, 2)
         
-        # 2. **两点交叉**
-        point1, point2 = sorted(random.sample(range(num_genes), 2))  # 选两个交叉点
-        child = parent1[:point1] + parent2[point1:point2] + parent1[point2:]
+        # 2. **交叉操作**
+        if random.random() < crossover_rate:
+            point1, point2 = sorted(random.sample(range(num_genes), 2))  # 选两个交叉点
+            child = parent1[:point1] + parent2[point1:point2] + parent1[point2:]
+        else:
+            child = parent1[:]  # 直接复制一个父代，不交叉
 
         # 3. **变异**
         for i in range(num_genes):

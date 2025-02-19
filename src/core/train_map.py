@@ -113,7 +113,8 @@ for generation in range(GENERATIONS):
         cars = []
         next_individuals = generate_offspring(population=elite, n_offspring=50 - len(elite), 
                                             structure=structure, fixed_indices=fixed_indices, 
-                                            bounds=bounds, mutation_rate=0.1, mutation_scale=0.1)
+                                            bounds=bounds, crossover_rate=0.8, mutation_rate=0.2, 
+                                            mutation_scale=0.1)
         next_individuals.extend(elite)
         for individual in next_individuals:
             car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
