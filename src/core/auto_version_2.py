@@ -1,5 +1,4 @@
 import pygame
-import time
 import os
 import sys
 from car import Car
@@ -8,6 +7,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from src.core.ga_fuzzy import random_individual, repair_membership_functions
 from src.util.individual_file_util import read_individual
 from src.util.track_file_util import load_track_data
+
+# 添加根目录到 sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 # 初始化 Pygame
 pygame.init()
@@ -46,49 +48,43 @@ else:
     individual = repair_membership_functions(individual, structure, fixed_indices)
     car = Car(individual=individual, pos=[400, 475], angle=0, max_speed=2)
 
-# 遗传算法执行多少代
-GENERATIONS = 100
+
 running = True
 # 遗传算法开始
-for generation in range(GENERATIONS):
-    if not running:
-        break
+while running:
+    screen.fill(WHITE)
 
-    start_time = time.time()
-
-    while time.time() - start_time < 120 and running:
-        screen.fill(WHITE)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        
-        car_points = car.update_info(track, check_line)
-        if car_points:
-            # 绘制车辆
-            pygame.draw.polygon(screen, RED, car_points)
-        else:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
             running = False
-            print("Car out of track!")
-        
-        # 绘制赛道
-        pygame.draw.polygon(screen, BLACK, track_outer, 3)
-        pygame.draw.polygon(screen, BLACK, track_inner, 3)
-        
-        # 绘制检查线
-        for line in check_line:
-            pygame.draw.line(screen, GREEN, line[0], line[1], 2)
-            
-        # 在右上角打印现在小车的速度、前面障碍物的距离、左右障碍物的距离
-        speed_text = font.render("Speed: {:.2f}".format(car.speed), True, BLACK)
-        screen.blit(speed_text, (800, 50))
-        front_text = font.render("Front: {:.2f}".format(car.front_dist), True, BLACK)
-        screen.blit(front_text, (800, 100))
-        left_text = font.render("Left: {:.2f}".format(car.left_dist), True, BLACK)
-        screen.blit(left_text, (800, 150))
-        right_text = font.render("Right: {:.2f}".format(car.right_dist), True, BLACK)
-        screen.blit(right_text, (800, 200))
     
-        pygame.display.flip()
+    car_points = car.update_info(track, check_line)
+    if car_points:
+        # 绘制车辆
+        pygame.draw.polygon(screen, RED, car_points)
+    else:
+        running = False
+        print("Car out of track!")
+    
+    # 绘制赛道
+    pygame.draw.polygon(screen, BLACK, track_outer, 3)
+    pygame.draw.polygon(screen, BLACK, track_inner, 3)
+    
+    # 绘制检查线
+    for line in check_line:
+        pygame.draw.line(screen, GREEN, line[0], line[1], 2)
+        
+    # 在右上角打印现在小车的速度、前面障碍物的距离、左右障碍物的距离
+    speed_text = font.render("Speed: {:.2f}".format(car.speed), True, BLACK)
+    screen.blit(speed_text, (800, 50))
+    front_text = font.render("Front: {:.2f}".format(car.front_dist), True, BLACK)
+    screen.blit(front_text, (800, 100))
+    left_text = font.render("Left: {:.2f}".format(car.left_dist), True, BLACK)
+    screen.blit(left_text, (800, 150))
+    right_text = font.render("Right: {:.2f}".format(car.right_dist), True, BLACK)
+    screen.blit(right_text, (800, 200))
+
+    pygame.display.flip()
+    pygame.time.delay(10)
         
 pygame.quit()

@@ -39,7 +39,7 @@ lower_bounds = [0] * 60
 upper_bounds = [2] * 15 + [500] * 15 + [300] * 30
 bounds = (lower_bounds, upper_bounds)
 cars = []
-for _ in range(10-len(elite)):
+for _ in range(50-len(elite)):
     individual = random_individual()
     # 修复模糊隶属函数参数
     individual = repair_membership_functions(individual, structure, fixed_indices)
@@ -59,9 +59,8 @@ for generation in range(GENERATIONS):
         break
 
     start_time = time.time()
-    run_time = min((generation + 1) * 60, 240)
 
-    while time.time() - start_time < run_time and running:
+    while time.time() - start_time < 60 and running:
         screen.fill(WHITE)
 
         for event in pygame.event.get():
@@ -88,19 +87,20 @@ for generation in range(GENERATIONS):
         # 在右上角打印现在第几代，以及时间还剩多久, 以及剩余几辆车
         text = font.render(f"Generation: {generation + 1}", True, BLACK)
         screen.blit(text, (800, 50))
-        text = font.render(f"Time Left: {run_time - int(time.time() - start_time)}s", True, BLACK)
+        text = font.render(f"Time Left: {60 - int(time.time() - start_time)}s", True, BLACK)
         screen.blit(text, (800, 100))
         text = font.render(f"Cars Left: {car_num}", True, BLACK)
         screen.blit(text, (800, 150))
     
         pygame.display.flip()
-        
+        pygame.time.delay(10)
+
     if running:
         # 筛选适应度最高的5个存活个体,如果不足5个则全部保留
         elite = []
         cars.sort(key=lambda x: x.fitness, reverse=True)
         for car in cars:
-            if len(elite) >= 3:
+            if len(elite) >= 10:
                 break
             else:
                 if car.individual not in elite:
@@ -108,19 +108,19 @@ for generation in range(GENERATIONS):
                 
         # 保存elite
         save_individual("data/ga_train/elite_individual.txt", elite)
-        
+
         # 生成下一代个体
         cars = []
-        next_individuals = generate_offspring(population=elite, n_offspring=8 - len(elite), 
+        next_individuals = generate_offspring(population=elite, n_offspring=40 - len(elite), 
                                             structure=structure, fixed_indices=fixed_indices, 
                                             bounds=bounds)
         next_individuals.extend(elite)
         for individual in next_individuals:
             car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
             cars.append(car)
-            
+
         # 再引入2个随机个体
-        for _ in range(2):
+        for _ in range(10):
             individual = random_individual()
             individual = repair_membership_functions(individual, structure, fixed_indices)
             car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
