@@ -118,7 +118,7 @@ def generate_offspring(population, n_offspring, structure, bounds, fixed_indices
         # 3. **变异**
         for i in range(num_genes):
             if i not in fixed_indices and random.random() < mutation_rate:
-                mutation = np.random.uniform(-mutation_scale, mutation_scale) * (max(parent1[i], parent2[i]) - min(parent1[i], parent2[i]))
+                mutation = np.random.uniform(-mutation_scale, mutation_scale) * (upper_bounds[i] - lower_bounds[i])
                 child[i] = min(max(child[i] + mutation, lower_bounds[i]), upper_bounds[i])  # 确保值在上下界范围内
 
         # 4. **修复子代**
