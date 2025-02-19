@@ -2,6 +2,7 @@ import pygame
 import time
 import os
 import sys
+import logging
 from car import Car
 # 添加根目录到 sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -12,6 +13,9 @@ from src.util.track_file_util import load_track_data
 # 初始化 Pygame
 pygame.init()
 running = True
+
+# 设置日志
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # 屏幕设置
 WIDTH, HEIGHT = 1000, 800
@@ -41,13 +45,14 @@ car_max_num = 50
 cars = []
 
 # 生成车辆
-font = pygame.font.Font("src\\config\\font\msyh.ttc", 36)
+font = pygame.font.Font("src/config/font/msyh.ttc", 36)
 for _ in range(car_max_num - len(elite)):
     if not running:
         break
     for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
+        if event.type == pygame.QUIT:
+            running = False
+
     # 显示已经初始化几辆车
     screen.fill(WHITE)
     text = font.render(f"正在生成第1代车辆数据...", True, BLACK)
@@ -58,11 +63,17 @@ for _ in range(car_max_num - len(elite)):
     screen.blit(text, (300, 400))
     pygame.display.flip()
     pygame.event.pump()
-    individual = random_individual()
-    # 修复模糊隶属函数参数
-    individual = repair_membership_functions(individual, structure, fixed_indices)
-    car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
-    cars.append(car)
+
+    try:
+        individual = random_individual()
+        # 修复模糊隶属函数参数
+        individual = repair_membership_functions(individual, structure, fixed_indices)
+        car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
+        cars.append(car)
+    except Exception as e:
+        logging.info(f"车辆生成失败: {e}")
+        continue  # 继续生成下一辆车
+
     
 for individual in elite:
     if not running:
@@ -80,8 +91,12 @@ for individual in elite:
     screen.blit(text, (300, 400))
     pygame.display.flip()
     pygame.event.pump()
-    car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
-    cars.append(car)
+    try:
+        car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
+        cars.append(car)
+    except Exception as e:
+        logging.info(f"车辆生成失败: {e}")
+        continue  # 继续生成下一辆车
     
 # 遗传算法执行多少代
 GENERATIONS = 100
@@ -91,7 +106,7 @@ for generation in range(GENERATIONS):
     if not running:
         break
     
-    font = pygame.font.Font("src\\config\\font\msyh.ttc", 26)
+    font = pygame.font.Font("src/config/font/msyh.ttc", 26)
     start_time = time.time()
     
     while time.time() - start_time < 300 and running:
@@ -164,7 +179,7 @@ for generation in range(GENERATIONS):
                                             mutation_scale=0.1)
         next_individuals.extend(elite)
         
-        font = pygame.font.Font("src\\config\\font\msyh.ttc", 36)
+        font = pygame.font.Font("src/config/font/msyh.ttc", 36)
         for individual in next_individuals:
             if not running:
                 break
@@ -182,7 +197,11 @@ for generation in range(GENERATIONS):
             pygame.display.flip()
             pygame.event.pump()
             # 生成车辆
-            car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
-            cars.append(car)
+            try:
+                car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
+                cars.append(car)
+            except Exception as e:
+                logging.info(f"车辆生成失败: {e}")
+                continue  # 继续生成下一辆车
         
 pygame.quit()

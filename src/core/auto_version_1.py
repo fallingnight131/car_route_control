@@ -41,12 +41,12 @@ lower_bounds = [0] * 60
 upper_bounds = [2] * 15 + [500] * 15 + [300] * 30
 bounds = (lower_bounds, upper_bounds)
 if elite:
-    car = Car(individual=elite[0], pos=[200, 750], angle=0, max_speed=2)
+    car = Car(individual=elite[0], pos=[180, 750], angle=0, max_speed=2)
 else:
     individual = random_individual()
     # 修复模糊隶属函数参数
     individual = repair_membership_functions(individual, structure, fixed_indices)
-    car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
+    car = Car(individual=individual, pos=[180, 750], angle=0, max_speed=2)
 
 
 running = True
