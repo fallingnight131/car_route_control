@@ -43,6 +43,11 @@ cars = []
 # 生成车辆
 font = pygame.font.Font("src\\config\\font\msyh.ttc", 36)
 for _ in range(car_max_num - len(elite)):
+    if not running:
+        break
+    for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
     # 显示已经初始化几辆车
     screen.fill(WHITE)
     text = font.render(f"正在生成第1代车辆数据...", True, BLACK)
@@ -52,6 +57,7 @@ for _ in range(car_max_num - len(elite)):
     text = font.render(f"已生成：: {len(cars)}/{car_max_num}", True, BLACK)
     screen.blit(text, (300, 400))
     pygame.display.flip()
+    pygame.event.pump()
     individual = random_individual()
     # 修复模糊隶属函数参数
     individual = repair_membership_functions(individual, structure, fixed_indices)
@@ -59,6 +65,11 @@ for _ in range(car_max_num - len(elite)):
     cars.append(car)
     
 for individual in elite:
+    if not running:
+        break
+    for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
     # 显示已经初始化几辆车
     screen.fill(WHITE)
     text = font.render(f"正在生成第1代车辆数据...", True, BLACK)
@@ -68,6 +79,7 @@ for individual in elite:
     text = font.render(f"已生成：: {len(cars)}/{car_max_num}", True, BLACK)
     screen.blit(text, (300, 400))
     pygame.display.flip()
+    pygame.event.pump()
     car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
     cars.append(car)
     
@@ -93,6 +105,9 @@ for generation in range(GENERATIONS):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
             break
+        
+        # 定期处理窗口事件，防止窗口卡死
+        pygame.event.pump()
         
         car_num = len(cars)
         max_fitness = 0
@@ -151,6 +166,11 @@ for generation in range(GENERATIONS):
         
         font = pygame.font.Font("src\\config\\font\msyh.ttc", 36)
         for individual in next_individuals:
+            if not running:
+                break
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
             # 显示已经初始化几辆车
             screen.fill(WHITE)
             text = font.render(f"正在生成第{generation + 2}代车辆数据...", True, BLACK)
@@ -160,6 +180,7 @@ for generation in range(GENERATIONS):
             text = font.render(f"已生成：: {len(cars)}/{car_max_num}", True, BLACK)
             screen.blit(text, (300, 400))
             pygame.display.flip()
+            pygame.event.pump()
             # 生成车辆
             car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
             cars.append(car)
