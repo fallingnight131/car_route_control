@@ -90,7 +90,7 @@ while running:
             running = lose_ui(screen, WIDTH, HEIGHT)
             break
         
-        # 检测是否都碰边界
+        # 检测是否碰到边界
         if not player_car.alive:
             running = lose_ui(screen, WIDTH, HEIGHT)
             break

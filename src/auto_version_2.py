@@ -7,9 +7,8 @@ from src.core.car import Car
 from src.core.ga_fuzzy import random_individual, repair_membership_functions
 from src.util.individual_file_util import read_individual
 from src.util.track_file_util import load_track_data
-
-# 添加根目录到 sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+from src.ui.init_ui import init_ui_auto
+from src.ui.state_ui import state_ui_auto
 
 # 初始化 Pygame
 pygame.init()
@@ -24,6 +23,9 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
+
+# 加载界面
+init_ui_auto(screen)
 
 # 加载赛道数据
 track_outer, track_inner, check_line = load_track_data("src/config/track_info/auto_2.json")
@@ -47,7 +49,6 @@ else:
     # 修复模糊隶属函数参数
     individual = repair_membership_functions(individual, structure, fixed_indices)
     car = Car(individual=individual, pos=[400, 475], angle=0, max_speed=2)
-
 
 running = True
 # 遗传算法开始
@@ -75,16 +76,7 @@ while running:
         pygame.draw.line(screen, GREEN, line[0], line[1], 2)
         
     # 在右上角打印现在小车的速度、前面障碍物的距离、左右障碍物的距离
-    speed_text = font.render("Speed: {:.2f}".format(car.speed), True, BLACK)
-    screen.blit(speed_text, (800, 50))
-    front_text = font.render("Front: {:.2f}".format(car.front_dist), True, BLACK)
-    screen.blit(front_text, (800, 100))
-    left_text = font.render("Left: {:.2f}".format(car.left_dist), True, BLACK)
-    screen.blit(left_text, (800, 150))
-    right_text = font.render("Right: {:.2f}".format(car.right_dist), True, BLACK)
-    screen.blit(right_text, (800, 200))
-
-    pygame.display.flip()
+    state_ui_auto(screen, car.speed, car.front_dist, car.left_dist, car.right_dist)
     pygame.time.delay(10)
         
 pygame.quit()

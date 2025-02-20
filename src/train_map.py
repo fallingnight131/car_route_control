@@ -9,6 +9,8 @@ from src.core.car import Car
 from src.core.ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
 from src.util.individual_file_util import read_individual, save_individual
 from src.util.track_file_util import load_track_data
+from src.ui.init_ui import init_ui_train
+from src.ui.state_ui import state_ui_train
 
 # 初始化 Pygame
 pygame.init()
@@ -45,25 +47,14 @@ car_max_num = 50
 cars = []
 
 # 生成车辆
-font = pygame.font.Font("src/asset/font/msyh.ttc", 36)
 for _ in range(car_max_num - len(elite)):
     if not running:
         break
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
     # 显示已经初始化几辆车
-    screen.fill(WHITE)
-    text = font.render(f"正在生成第1代车辆数据...", True, BLACK)
-    screen.blit(text, (300, 300))
-    text = font.render(f"请稍等！", True, BLACK)
-    screen.blit(text, (300, 350))
-    text = font.render(f"已生成：: {len(cars)}/{car_max_num}", True, BLACK)
-    screen.blit(text, (300, 400))
-    pygame.display.flip()
-    pygame.event.pump()
-
+    init_ui_train(screen, 1, len(cars), car_max_num)
     try:
         individual = random_individual()
         # 修复模糊隶属函数参数
@@ -73,7 +64,6 @@ for _ in range(car_max_num - len(elite)):
     except Exception as e:
         logging.info(f"车辆生成失败: {e}")
         continue  # 继续生成下一辆车
-
     
 for individual in elite:
     if not running:
@@ -82,15 +72,7 @@ for individual in elite:
                 if event.type == pygame.QUIT:
                     running = False
     # 显示已经初始化几辆车
-    screen.fill(WHITE)
-    text = font.render(f"正在生成第1代车辆数据...", True, BLACK)
-    screen.blit(text, (300, 300))
-    text = font.render(f"请稍等！", True, BLACK)
-    screen.blit(text, (300, 350))
-    text = font.render(f"已生成：: {len(cars)}/{car_max_num}", True, BLACK)
-    screen.blit(text, (300, 400))
-    pygame.display.flip()
-    pygame.event.pump()
+    init_ui_train(screen, 1, len(cars), car_max_num)
     try:
         car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
         cars.append(car)
@@ -98,18 +80,17 @@ for individual in elite:
         logging.info(f"车辆生成失败: {e}")
         continue  # 继续生成下一辆车
     
-# 遗传算法执行多少代
-GENERATIONS = 100
 
+GENERATIONS = 100   # 遗传算法执行多少代
+max_time = 300     # 每代最多执行多少秒
 # 遗传算法开始
 for generation in range(GENERATIONS):
     if not running:
         break
     
-    font = pygame.font.Font("src/asset/font/msyh.ttc", 26)
     start_time = time.time()
     
-    while time.time() - start_time < 300 and running:
+    while time.time() - start_time < max_time and running:
         screen.fill(WHITE)
 
         for event in pygame.event.get():
@@ -144,17 +125,7 @@ for generation in range(GENERATIONS):
             pygame.draw.line(screen, GREEN, line[0], line[1], 2)
             
         # 在右上角打印现在第几代，以及时间还剩多久, 剩余几辆车, 最大适应度
-        
-        text = font.render(f"Generation: {generation + 1}", True, BLACK)
-        screen.blit(text, (800, 50))
-        text = font.render(f"Time Left: {300 - int(time.time() - start_time)}s", True, BLACK)
-        screen.blit(text, (800, 100))
-        text = font.render(f"Cars Left: {car_num}", True, BLACK)
-        screen.blit(text, (800, 150))
-        text = font.render(f"Max Fitness: {max_fitness}", True, BLACK)
-        screen.blit(text, (800, 200))
-    
-        pygame.display.flip()
+        state_ui_train(screen, generation + 1, start_time, max_time, car_num, max_fitness)
         pygame.time.delay(5)
 
     if running:
@@ -179,7 +150,6 @@ for generation in range(GENERATIONS):
                                             mutation_scale=0.1)
         next_individuals.extend(elite)
         
-        font = pygame.font.Font("src/asset/font/msyh.ttc", 36)
         for individual in next_individuals:
             if not running:
                 break
@@ -187,15 +157,7 @@ for generation in range(GENERATIONS):
                 if event.type == pygame.QUIT:
                     running = False
             # 显示已经初始化几辆车
-            screen.fill(WHITE)
-            text = font.render(f"正在生成第{generation + 2}代车辆数据...", True, BLACK)
-            screen.blit(text, (300, 300))
-            text = font.render(f"请稍等！", True, BLACK)
-            screen.blit(text, (300, 350))
-            text = font.render(f"已生成：: {len(cars)}/{car_max_num}", True, BLACK)
-            screen.blit(text, (300, 400))
-            pygame.display.flip()
-            pygame.event.pump()
+            init_ui_train(screen, generation + 2, len(cars), car_max_num)
             # 生成车辆
             try:
                 car = Car(individual=individual, pos=[200, 750], angle=0, max_speed=2)
