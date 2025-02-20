@@ -53,7 +53,6 @@ while running:
     track_outer, track_inner, check_line = load_track_data("src/config/track_info/vs.json")
     track = [track_outer, track_inner]
 
-
     while True:
         screen.fill(WHITE)
         for event in pygame.event.get():
