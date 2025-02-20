@@ -118,9 +118,9 @@ class Car:
         
         # 更新车辆信息
         if left:
-            self.angle += 4
+            self.angle += 2
         if right:
-            self.angle -= 4
+            self.angle -= 2
         if accelerate:
             self.speed = min(self.speed + 0.1, self.max_speed)
         else:

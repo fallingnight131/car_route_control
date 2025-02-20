@@ -1,6 +1,5 @@
 import pygame
 from car import Car
-import uuid
 import os
 import sys
 
@@ -13,9 +12,6 @@ from src.core.ga_fuzzy import random_individual, repair_membership_functions
 # 初始化 Pygame
 pygame.init()
 
-# 生成唯一 ID
-unique_id = uuid.uuid4().hex  
-    
 # 屏幕设置
 WIDTH, HEIGHT = 1000, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -90,7 +86,6 @@ while running:
         print("Success: you win! !")
         running = False
         
-    
     # 绘制赛道和终点
     pygame.draw.polygon(screen, BLACK, track_outer, 3)
     pygame.draw.polygon(screen, BLACK, track_inner, 3)
@@ -100,6 +95,6 @@ while running:
         pygame.draw.line(screen, GREEN, line[0], line[1], 2)
     
     pygame.display.flip()
-    pygame.time.delay(15)
+    pygame.time.delay(10)
     
 pygame.quit()
