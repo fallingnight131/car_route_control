@@ -1,12 +1,13 @@
 import math
 import logging
+import pygame
 from fuzzy import FuzzyDriver
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class Car:
-    def __init__(self, individual, pos=[0, 0], angle=0, max_speed=2):
+    def __init__(self, individual=None, pos=[0, 0], angle=0, max_speed=2):
         """
         车辆个体，适用于遗传算法优化路径跟踪
         :param individual: List[float] 模糊控制参数（遗传算法中的基因）
@@ -20,7 +21,8 @@ class Car:
         :param max_speed: float 最大速度
         """
         self.individual = individual  # 模糊控制参数
-        self.driver = FuzzyDriver(individual)
+        if individual:
+            self.driver = FuzzyDriver(individual)
         self.fitness = 0  # 适应度，初始为 0
         self.pos = list(pos)  # 位置坐标
         self.last_pos = list(pos)  # 上一时刻位置坐标
@@ -30,13 +32,12 @@ class Car:
         self.front_dist = 0 # 前方障碍物距离
         self.left_dist = 0  # 左侧障碍物距离
         self.right_dist = 0 # 右侧障碍物距离
-        self.max_speed = 2  # 最大速度
         self.alive = True  # 是否存活
         self.valid_checkpoints = 0  # 有效检查点编号
 
-    def update_info(self, track, check_line):
+    def update_info_fuzzy(self, track, check_line):
         """
-        更新车辆位置
+        通过模糊控制更新车辆位置
         :param track: List[Tuple[float, float]] 赛道坐标
         :param check_line: List[Tuple[Tuple[float, float], Tuple[float, float]]] 检查线坐标
         """
@@ -89,6 +90,57 @@ class Car:
         
         return car_points
         
+    def update_info_player(self, keys, track, check_line):
+        """
+        通过玩家操作更新车辆位置
+        :param track: List[Tuple[float, float]] 赛道坐标
+        :param check_line: List[Tuple[Tuple[float, float], Tuple[float, float]]] 检查线坐标
+        """
+        if not self.alive:
+            return None
+        
+        track_outer, track_inner = track
+        
+        # 获取玩家操作
+        left = keys[pygame.K_LEFT]
+        right = keys[pygame.K_RIGHT]
+        accelerate = keys[pygame.K_SPACE]
+        
+        # 出界检测
+        if self.has_crossed_polygon(self.last_pos, self.pos, track_outer) or self.has_crossed_polygon(self.last_pos, self.pos, track_inner):
+            self.alive = False
+            
+        # 检测是否到检查线
+        self.update_fitness(check_line)
+        
+        # 记录上一时刻的位置
+        self.last_pos = self.pos.copy()
+        
+        # 更新车辆信息
+        if left:
+            self.angle += 4
+        if right:
+            self.angle -= 4
+        if accelerate:
+            self.speed = min(self.speed + 0.1, self.max_speed)
+        else:
+            self.speed = max(self.speed - 0.1, 0)
+            
+        rad = math.radians(self.angle)
+        
+        # 更新位置
+        self.pos[0] += math.cos(rad) * self.speed
+        self.pos[1] -= math.sin(rad) * self.speed
+        
+        # 更新车辆的三角形箭头坐标, 用于绘制
+        car_points = [
+        (self.pos[0] + math.cos(rad) * 10, self.pos[1] - math.sin(rad) * 10),
+        (self.pos[0] + math.cos(rad + 2.5) * 10, self.pos[1] - math.sin(rad + 2.5) * 10),
+        (self.pos[0] + math.cos(rad - 2.5) * 10, self.pos[1] - math.sin(rad - 2.5) * 10)
+        ]
+        
+        return car_points
+    
     def evaluate_fitness(self, checkpoints):
         """
         计算适应度，基于通过的检查点数

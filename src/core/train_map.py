@@ -127,7 +127,7 @@ for generation in range(GENERATIONS):
         car_num = len(cars)
         max_fitness = 0
         for car in cars:
-            car_points = car.update_info(track, check_line)
+            car_points = car.update_info_fuzzy(track, check_line)
             max_fitness = max(max_fitness, car.fitness)
             if car_points:
                 # 绘制车辆

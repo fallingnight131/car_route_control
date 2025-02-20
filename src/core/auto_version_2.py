@@ -58,7 +58,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
     
-    car_points = car.update_info(track, check_line)
+    car_points = car.update_info_fuzzy(track, check_line)
     if car_points:
         # 绘制车辆
         pygame.draw.polygon(screen, RED, car_points)
