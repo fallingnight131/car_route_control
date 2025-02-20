@@ -35,7 +35,7 @@ track_outer, track_inner, check_line = load_track_data("src/config/track_info/pl
 track = [track_outer, track_inner]
 
 # 创建 data 文件夹
-data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'data/player')
+data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data/player')
 if not os.path.exists(data_dir):
     os.makedirs(data_dir)
 
