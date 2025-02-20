@@ -1,9 +1,9 @@
 import pygame
 import os
 import sys
-from car import Car
 # 添加根目录到 sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.core.car import Car
 from src.core.ga_fuzzy import random_individual, repair_membership_functions
 from src.util.individual_file_util import read_individual
 from src.util.track_file_util import load_track_data
@@ -26,7 +26,7 @@ BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
 
 # 加载赛道数据
-track_outer, track_inner, check_line = load_track_data("src/config/track_info/auto_1.json")
+track_outer, track_inner, check_line = load_track_data("src/config/track_info/auto_2.json")
 track = [track_outer, track_inner]
 
 font = pygame.font.SysFont(None, 36)  # 默认字体，大小36
@@ -41,12 +41,12 @@ lower_bounds = [0] * 60
 upper_bounds = [2] * 15 + [500] * 15 + [300] * 30
 bounds = (lower_bounds, upper_bounds)
 if elite:
-    car = Car(individual=elite[0], pos=[180, 750], angle=0, max_speed=2)
+    car = Car(individual=elite[0], pos=[400, 475], angle=0, max_speed=2)
 else:
     individual = random_individual()
     # 修复模糊隶属函数参数
     individual = repair_membership_functions(individual, structure, fixed_indices)
-    car = Car(individual=individual, pos=[180, 750], angle=0, max_speed=2)
+    car = Car(individual=individual, pos=[400, 475], angle=0, max_speed=2)
 
 
 running = True

@@ -4,9 +4,8 @@ import csv
 import uuid
 import os
 import sys
-
 # 添加根目录到 sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.util.track_file_util import load_track_data
 
 # 初始化 Pygame

@@ -3,9 +3,9 @@ import time
 import os
 import sys
 import logging
-from car import Car
 # 添加根目录到 sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.core.car import Car
 from src.core.ga_fuzzy import random_individual, repair_membership_functions, generate_offspring
 from src.util.individual_file_util import read_individual, save_individual
 from src.util.track_file_util import load_track_data
@@ -45,7 +45,7 @@ car_max_num = 50
 cars = []
 
 # 生成车辆
-font = pygame.font.Font("src/config/font/msyh.ttc", 36)
+font = pygame.font.Font("src/asset/font/msyh.ttc", 36)
 for _ in range(car_max_num - len(elite)):
     if not running:
         break
@@ -106,7 +106,7 @@ for generation in range(GENERATIONS):
     if not running:
         break
     
-    font = pygame.font.Font("src/config/font/msyh.ttc", 26)
+    font = pygame.font.Font("src/asset/font/msyh.ttc", 26)
     start_time = time.time()
     
     while time.time() - start_time < 300 and running:
@@ -179,7 +179,7 @@ for generation in range(GENERATIONS):
                                             mutation_scale=0.1)
         next_individuals.extend(elite)
         
-        font = pygame.font.Font("src/config/font/msyh.ttc", 36)
+        font = pygame.font.Font("src/asset/font/msyh.ttc", 36)
         for individual in next_individuals:
             if not running:
                 break

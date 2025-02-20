@@ -1,7 +1,7 @@
 import math
 import logging
 import pygame
-from fuzzy import FuzzyDriver
+from src.core.fuzzy import FuzzyDriver
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
