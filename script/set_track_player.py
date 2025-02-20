@@ -18,7 +18,7 @@ track_inner = [
     (850, 500), (850, 550), (800, 600), (650, 650), (530, 630),
     (420, 700), (370, 750), (250, 750)
 ]
-check_line = []
+check_line = [[(150, 600), (250, 600)]]
 
 save_track_data("src/config/track_info/player.json", track_outer, track_inner, check_line)
 print("Track data saved to src/config/track_info/player.json")
