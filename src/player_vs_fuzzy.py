@@ -103,6 +103,6 @@ while running:
             break
             
         pygame.display.flip()
-        pygame.time.delay(5)
+        pygame.time.delay(7)
         
 pygame.quit()
