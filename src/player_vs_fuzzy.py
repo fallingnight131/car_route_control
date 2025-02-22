@@ -9,6 +9,7 @@ from src.util.individual_file_util import read_individual
 from src.core.ga_fuzzy import random_individual, repair_membership_functions
 from src.ui.end_ui import win_ui, lose_ui
 from src.ui.init_ui import init_ui_vs
+from src.ui.state_ui import state_ui_vs
 
 # 初始化 Pygame
 pygame.init()
@@ -81,6 +82,9 @@ while running:
         # 绘制检查线
         for line in check_line:
             pygame.draw.line(screen, GREEN, line[0], line[1], 2)
+            
+        # 绘制状态信息
+        state_ui_vs(screen)
         
         # 检测是否到达终点
         if player_car.fitness >= 1:
@@ -99,6 +103,6 @@ while running:
             break
             
         pygame.display.flip()
-        pygame.time.delay(10)
+        pygame.time.delay(5)
         
 pygame.quit()

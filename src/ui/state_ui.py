@@ -34,3 +34,29 @@ def state_ui_auto(screen, speed, front_dist, left_dist, right_dist):
 
     pygame.display.flip()
     pygame.event.pump()
+    
+def state_ui_vs(screen):
+    # 定义颜色
+    BLACK = (0, 0, 0)
+    RED = (255, 0, 0)
+    BLUE = (0, 0, 255)
+    
+    font = pygame.font.Font("src/asset/font/msyh.ttc", 26)
+    x, y = 800, 50
+    enemy_1 = font.render("▄", True, RED)
+    enemy_2 = font.render(" : Enemy", True, BLACK)
+    enemy_1_rect = enemy_1.get_rect(topleft=(x, y))
+    enemy_2_rect = enemy_2.get_rect(topleft=(x + enemy_1_rect.width, y))
+    screen.blit(enemy_1, enemy_1_rect)
+    screen.blit(enemy_2, enemy_2_rect)
+    
+    x, y = 800, 100
+    player_1 = font.render("▄", True, BLUE)
+    player_2 = font.render(" : You", True, BLACK)
+    player_1_rect = player_1.get_rect(topleft=(x, y))
+    player_2_rect = player_2.get_rect(topleft=(x + player_1_rect.width, y))
+    screen.blit(player_1, player_1_rect)
+    screen.blit(player_2, player_2_rect)
+    
+    pygame.display.flip()
+    pygame.event.pump()
