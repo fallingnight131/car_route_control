@@ -23,8 +23,9 @@ class FuzzyDriver:
         self.acceleration.automf(names=['DB', 'DS', 'Z', 'AS', 'AB'])
         self.rotation.automf(names=['RB', 'RS', 'Z', 'LS', 'LB'])
 
-        individual = individual + individual[-15:] + [-2, -2, -1.5, -1.7, -1, -0.2, -0.4, 0, 0.1, 0.05, 0.1, 0.15, 0.12, 0.2, 0.2,
-                                    -4, -4, -2, -4, -2, 0, -2, 0, 2, 0, 2, 4, 2, 4, 4]
+        individual = individual + individual[-15:] + [-2, -2, -1.5, -1.7, -1, -0.2, -0.4, 0, 0.1, 0.05, 
+                                                      0.1, 0.15, 0.12, 0.2, 0.2, -4, -4, -2, -4, -2, 
+                                                      0, -2, 0, 2, 0, 2, 4, 2, 4, 4]
         self.apply_individual_to_fuzzy(individual)
 
         self.acceleration_ctrl = ctrl.ControlSystem(self.define_acceleration_rules())
